@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Fish</title>
+    <style>
+        canvas {
+            border: 1px solid black;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="gameCanvas" width="1200" height="800"></canvas>
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const socket = new WebSocket('ws://localhost:5500');
+        let otherPlayers = {}; 
+    
+        socket.onopen = function() {
+            console.log('Connected to the server');
+            socket.send(JSON.stringify({ id: "yourPlayerId", x: x, y: y }));
+        };
+        
+        socket.onclose = function() {
+            console.log("WebSocket connection closed unexpectedly.");
+            setTimeout(function() {
+                socket = new WebSocket('ws://localhost:5500');
+                attachSocketHandlers();
+            }, 1000); 
+        };
+        
+        function attachSocketHandlers() {
+            socket.onopen = function() {
+                console.log('Reconnected to the server');
+            };
+            socket.onmessage = function(event) {
+            };
+            socket.onerror = function(event) {
+                console.error('WebSocket error:', event);
+            };
+            socket.onclose = function() {
+                console.log("WebSocket connection closed unexpectedly.");
+            };
+        }
+        
+    
+        socket.onmessage = function(event) {
+            try {
+                const data = JSON.parse(event.data);
+                if (data.id) {
+                    otherPlayers[data.id] = { x: data.x, y: data.y };
+                }
+                console.log('Other players updated:', otherPlayers);
+            } catch (e) {
+                console.error('Error parsing JSON!', e);
+            }
+        };
+        
+    
+        socket.onerror = function(event) {
+            console.error('WebSocket error:', event);
+        };
+        
+        function sendMessage() {
+            if (socket.readyState === WebSocket.OPEN) {
+                socket.send(JSON.stringify({ id: "yourPlayerId", x: x, y: y }));
+            } else if (socket.readyState === WebSocket.CONNECTING) {
+                setTimeout(sendMessage, 100);
+            } else {
+                console.log("WebSocket is not open and cannot send messages:", socket.readyState);
+            }
+        }
+                
+
+        let x = 50;
+        let y = 300;
+        const speed = 5;
+        let mouseX = x;
+        let mouseY = y;
+    
+        const backgroundImage = new Image();
+        backgroundImage.src = 'Fondo.jpg';
+        const fishImage = new Image();
+        fishImage.src = 'Sprite.png';
+    
+        canvas.addEventListener('click', function(event) {
+            mouseX = event.clientX - canvas.offsetLeft;
+            mouseY = event.clientY - canvas.offsetTop;
+        });
+    
+        function drawBackground() {
+            ctx.drawImage(backgroundImage, 0, 0, canvas.width, canvas.height);
+        }
+    
+        function drawFish(x, y) {
+            ctx.drawImage(fishImage, x, y);
+        }
+        function update() {
+            let dx = (mouseX-50) - x;
+            let dy = (mouseY-50) - y;
+            let angle = Math.atan2(dy, dx);
+            let velocityX = Math.cos(angle) * speed;
+            let velocityY = Math.sin(angle) * speed;
+        
+            if (Math.abs(dx) > speed || Math.abs(dy) > speed) {
+                x += velocityX;
+                y += velocityY;
+            }
+        
+            if (socket.readyState === WebSocket.OPEN) {
+                socket.send(JSON.stringify({ id: "yourPlayerId", x: x, y: y }));
+            } else {
+                console.log("WebSocket is not open: ", socket.readyState);
+            }
+        }
+        
+    
+        function drawOtherPlayers() {
+            Object.values(otherPlayers).forEach(player => {
+                drawFish(player.x, player.y);
+            });
+        }
+    
+        function gameLoop() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawBackground();
+            update();
+            drawOtherPlayers();
+            drawFish(x, y);
+            requestAnimationFrame(gameLoop);
+        }
+    
+        backgroundImage.onload = function() {
+            fishImage.onload = function() {
+                gameLoop();
+            };
+        };
+    </script>    
+</body>
+</html>
