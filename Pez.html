@@ -14,46 +14,68 @@
     <script>
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
-        const socket = new WebSocket('ws://localhost:5500');
-        let otherPlayers = {}; 
+        let socket = new WebSocket('ws://10.37.129.2:3000');
+        let otherPlayers = {};
+        let playerId = Math.random()*10000;
+        let dx;
+        let dy;
+        let angle;
+        let angleDegrees;
+
+        const backgroundImage = new Image();
+        backgroundImage.src = 'Fondo.jpg';
+
+        //const fishImage = new Image();
+        //fishImage.src = 'Sprite.png';
+
+        //const fishImageRight = new Image();
+        //fishImageRight.src = 'SpriteRight.png';
+
+
+        const fishImage3dFront= new Image();
+        fishImage3dFront.src = 'FishFront.png';
+
+        const fishImage3dUp= new Image();
+        fishImage3dUp.src = 'FishUp.png';
+        
+        const fishImage3dRight = new Image();
+        fishImage3dRight.src = 'RightFish.png';
+        
+        const fishImage3dRightSideUp= new Image();
+        fishImage3dRightSideUp.src = 'RightSideFishUp.png';
+
+        const fishImage3dRightSideDown= new Image();
+        fishImage3dRightSideDown.src = 'RightSideFishDown.png';
+
+        const fishImage3dLeft = new Image();
+        fishImage3dLeft.src = 'LeftFish.png';
+
+        const fishImage3dLeftUp = new Image();
+        fishImage3dLeftUp.src = 'LeftSideFishUp.png';
+
+        const fishImage3dLeftDown = new Image();
+        fishImage3dLeftDown.src = 'LeftSideFishDown.png';
+
+
+        const mainSong = new Audio('fishMainMusic.mp3');
     
         socket.onopen = function() {
             console.log('Connected to the server');
-            socket.send(JSON.stringify({ id: "yourPlayerId", x: x, y: y }));
+            socket.send(JSON.stringify({ id: playerId, x: x, y: y, dy:dy, dx:dx}));
         };
         
         socket.onclose = function() {
             console.log("WebSocket connection closed unexpectedly.");
             setTimeout(function() {
-                socket = new WebSocket('ws://localhost:5500');
+                socket = new WebSocket('ws://192.168.10.146:3000');
                 attachSocketHandlers();
             }, 1000); 
         };
-        
-        function attachSocketHandlers() {
-            socket.onopen = function() {
-                console.log('Reconnected to the server');
-            };
-            socket.onmessage = function(event) {
-            };
-            socket.onerror = function(event) {
-                console.error('WebSocket error:', event);
-            };
-            socket.onclose = function() {
-                console.log("WebSocket connection closed unexpectedly.");
-            };
-        }
-        
-    
+
         socket.onmessage = function(event) {
-            try {
-                const data = JSON.parse(event.data);
-                if (data.id) {
-                    otherPlayers[data.id] = { x: data.x, y: data.y };
-                }
-                console.log('Other players updated:', otherPlayers);
-            } catch (e) {
-                console.error('Error parsing JSON!', e);
+            const data = JSON.parse(event.data);
+            if (data.id && data.id !== playerId) { 
+                otherPlayers[data.id] = { x: data.x, y: data.y, dy:data.dy, dx:data.dx };
             }
         };
         
@@ -64,7 +86,7 @@
         
         function sendMessage() {
             if (socket.readyState === WebSocket.OPEN) {
-                socket.send(JSON.stringify({ id: "yourPlayerId", x: x, y: y }));
+                socket.send(JSON.stringify({ id: playerId, x: x, y: y }));
             } else if (socket.readyState === WebSocket.CONNECTING) {
                 setTimeout(sendMessage, 100);
             } else {
@@ -79,14 +101,10 @@
         let mouseX = x;
         let mouseY = y;
     
-        const backgroundImage = new Image();
-        backgroundImage.src = 'Fondo.jpg';
-        const fishImage = new Image();
-        fishImage.src = 'Sprite.png';
-    
         canvas.addEventListener('click', function(event) {
             mouseX = event.clientX - canvas.offsetLeft;
             mouseY = event.clientY - canvas.offsetTop;
+            mainSong.play().catch(e => console.error('Error playing the audio:', e));
         });
     
         function drawBackground() {
@@ -94,12 +112,71 @@
         }
     
         function drawFish(x, y) {
-            ctx.drawImage(fishImage, x, y);
+            if(angleDegrees>-100 && angleDegrees<-80) { //arriba
+                ctx.drawImage(fishImage3dUp, x, y);
+             }
+             if(angleDegrees<100 && angleDegrees>80) { //abajo
+            ctx.drawImage(fishImage3dFront, x, y);
+            }
+            if(angleDegrees>-10 && angleDegrees<10) { //derecha
+                 ctx.drawImage(fishImage3dRight, x, y);
+            }
+            if(angleDegrees>-80 && angleDegrees<-10) { //arriba derecha
+                ctx.drawImage(fishImage3dRightSideUp, x, y);
+           }
+            if(angleDegrees<80 && angleDegrees>10) { //abajo derecha
+                ctx.drawImage(fishImage3dRightSideDown, x, y);
+           }
+            if(angleDegrees<-170 || angleDegrees>170) { //izquierda
+                ctx.drawImage(fishImage3dLeft, x, y);
+            }
+            if(angleDegrees>-170 && angleDegrees<-100) { //arriba izquierda
+                ctx.drawImage(fishImage3dLeftUp, x, y);
+            }
+            if(angleDegrees<170 && angleDegrees>100) { //abajo izquierda
+                ctx.drawImage(fishImage3dLeftDown, x, y);
+            }
         }
+
+        function drawOtherPlayers() {
+            Object.values(otherPlayers).forEach(player => {
+                anglePlayer = Math.atan2(player.dy, player.dx);
+                angleDegreesPlayer = anglePlayer * (180 / Math.PI);
+                console.log(`player: ${player.dy}`)
+                if(angleDegreesPlayer>-100 && angleDegreesPlayer<-80) { //arriba
+                    ctx.drawImage(fishImage3dUp, player.x, player.y);
+                 }
+                 if(angleDegreesPlayer<100 && angleDegreesPlayer>80) { //abajo
+                ctx.drawImage(fishImage3dFront, player.x, player.y);
+                }
+                if(angleDegreesPlayer>-10 && angleDegreesPlayer<10) { //derecha
+                     ctx.drawImage(fishImage3dRight, player.x, player.y);
+                }
+                if(angleDegreesPlayer>-80 && angleDegreesPlayer<-10) { //arriba derecha
+                    ctx.drawImage(fishImage3dRightSideUp, player.x, player.y);
+               }
+                if(angleDegreesPlayer<80 && angleDegreesPlayer>10) { //abajo derecha
+                    ctx.drawImage(fishImage3dRightSideDown, player.x, player.y);
+               }
+                if(angleDegreesPlayer<-170 || angleDegreesPlayer>170) { //izquierda
+                    ctx.drawImage(fishImage3dLeft, player.x, player.y);
+                }
+                if(angleDegreesPlayer>-170 && angleDegreesPlayer<-100) { //arriba izquierda
+                    ctx.drawImage(fishImage3dLeftUp, player.x, player.y);
+                }
+                if(angleDegreesPlayer<170 && angleDegreesPlayer>100) { //abajo izquierda
+                    ctx.drawImage(fishImage3dLeftDown, player.x, player.y);
+                }
+            });
+        }
+
         function update() {
-            let dx = (mouseX-50) - x;
-            let dy = (mouseY-50) - y;
-            let angle = Math.atan2(dy, dx);
+            dx = (mouseX-70) - x;
+            dy = (mouseY-100) - y;
+            angle = Math.atan2(dy, dx);
+            angleDegrees = angle * (180 / Math.PI);
+            console.log(angleDegrees);
+            
             let velocityX = Math.cos(angle) * speed;
             let velocityY = Math.sin(angle) * speed;
         
@@ -107,19 +184,7 @@
                 x += velocityX;
                 y += velocityY;
             }
-        
-            if (socket.readyState === WebSocket.OPEN) {
-                socket.send(JSON.stringify({ id: "yourPlayerId", x: x, y: y }));
-            } else {
-                console.log("WebSocket is not open: ", socket.readyState);
-            }
-        }
-        
-    
-        function drawOtherPlayers() {
-            Object.values(otherPlayers).forEach(player => {
-                drawFish(player.x, player.y);
-            });
+            socket.send(JSON.stringify({ id: playerId, x: x, y: y, dy:dy, dx:dx }));
         }
     
         function gameLoop() {
@@ -130,12 +195,12 @@
             drawFish(x, y);
             requestAnimationFrame(gameLoop);
         }
-    
-        backgroundImage.onload = function() {
-            fishImage.onload = function() {
-                gameLoop();
-            };
-        };
+        ctx.fillRect(500, 300, 200, 200);
+        setTimeout(function() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            mainSong.play();
+            gameLoop();
+        }, 2000); 
     </script>    
 </body>
 </html>
