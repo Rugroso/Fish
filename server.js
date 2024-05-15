@@ -3,12 +3,11 @@ const server = new WebSocket.Server({ port: 3000 });
 let players = [];
 server.on('connection', function(ws) {
     players.push(ws);
-
     ws.on('message', function(message) {
         try {
             console.log(`Received: ${message}`);
             const data = JSON.parse(message);
-            const toSend = JSON.stringify({ id: data.id, x: data.x, y: data.y, dx:data.dx, dy:data.dy });
+            const toSend = JSON.stringify({ id: data.id, x: data.x, y: data.y, dx:data.dx, dy:data.dy, roomId:data.roomId, name:data.name, message:data.message });
             players.forEach(client => {
                 if (client !== ws && client.readyState === WebSocket.OPEN) {
                     client.send(toSend);

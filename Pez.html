@@ -10,20 +10,40 @@
     </style>
 </head>
 <body>
+    <div>
+        <input type="number" name="roomIdSelector" id="roomIdSelector">
+        <button onclick="selectRoom()">
+            IR A LA SALA
+        </button>
+        <input type="text" name="nameChanger" id="nameChanger">
+        <button onclick="changeName()">
+            CAMBIAR NOMBRE
+        </button>
+        <input type="text" name="sendMessage" id="sendMessage">
+        <button onclick="messageF()">
+            ENVIAR MENSAJE
+        </button>
+    </div>
     <canvas id="gameCanvas" width="1200" height="800"></canvas>
     <script>
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
-        let socket = new WebSocket('ws://10.37.129.2:3000');
+        let socket = new WebSocket('ws://192.168.10.146:3000');
         let otherPlayers = {};
-        let playerId = Math.random()*10000;
+        let playerId = Math.floor(Math.random()*10000);
         let dx;
         let dy;
         let angle;
         let angleDegrees;
+        let roomId = 512;
+        let name= playerId.toString();
+        let message = "";
+        let timeMessage = 0;
 
         const backgroundImage = new Image();
         backgroundImage.src = 'Fondo.jpg';
+        const backgroundImage2 = new Image();
+        backgroundImage2.src = 'Fondo2.jpg';
 
         //const fishImage = new Image();
         //fishImage.src = 'Sprite.png';
@@ -61,7 +81,7 @@
     
         socket.onopen = function() {
             console.log('Connected to the server');
-            socket.send(JSON.stringify({ id: playerId, x: x, y: y, dy:dy, dx:dx}));
+            socket.send(JSON.stringify({ id: playerId, x: x, y: y, dy:dy, dx:dx, roomId:roomId, name:name, message:message}));
         };
         
         socket.onclose = function() {
@@ -75,7 +95,7 @@
         socket.onmessage = function(event) {
             const data = JSON.parse(event.data);
             if (data.id && data.id !== playerId) { 
-                otherPlayers[data.id] = { x: data.x, y: data.y, dy:data.dy, dx:data.dx };
+                otherPlayers[data.id] = { x: data.x, y: data.y, dy:data.dy, dx:data.dx, roomId:data.roomId, name:data.name, message:data.message };
             }
         };
         
@@ -110,8 +130,30 @@
         function drawBackground() {
             ctx.drawImage(backgroundImage, 0, 0, canvas.width, canvas.height);
         }
+        function drawBackground2() {
+            ctx.drawImage(backgroundImage2, 0, 0, canvas.width, canvas.height);
+        }
     
-        function drawFish(x, y) {
+         function drawFish(x, y) {
+            ctx.beginPath();
+            ctx.fillStyle = 'black'
+            ctx.font = "bold 20px serif";
+            ctx.fillText(name,x+64,y+180);
+            ctx.closePath();
+            if (message!="" && timeMessage<=1000) {
+                timeMessage++;
+                console.log(timeMessage)
+                ctx.beginPath();
+                ctx.fillStyle = 'white'
+                ctx.fillRect(x+150, y-70, 150, 100)
+                ctx.fillStyle = 'black'
+                ctx.fillText(message,x+180,y-20);
+                ctx.closePath();
+            }
+            if (timeMessage >1000) {
+                timeMessage = 0;
+                message = "";
+            }
             if(angleDegrees>-100 && angleDegrees<-80) { //arriba
                 ctx.drawImage(fishImage3dUp, x, y);
              }
@@ -140,6 +182,20 @@
 
         function drawOtherPlayers() {
             Object.values(otherPlayers).forEach(player => {
+                console.log(roomId)
+                console.log(player.roomId)
+                if (roomId===player.roomId) {
+                ctx.font = "bold 20px serif";
+                ctx.fillText(player.name,player.x+64,player.y+180);
+                if (player.message!="") {
+                    console.log(player.message);
+                    ctx.beginPath();
+                    ctx.fillStyle = 'white'
+                    ctx.fillRect(player.x+150, player.y-70, 150, 100)
+                    ctx.fillStyle = 'black'
+                    ctx.fillText(player.message,player.x+180,player.y-20);
+                    ctx.closePath();
+                }
                 anglePlayer = Math.atan2(player.dy, player.dx);
                 angleDegreesPlayer = anglePlayer * (180 / Math.PI);
                 console.log(`player: ${player.dy}`)
@@ -167,6 +223,7 @@
                 if(angleDegreesPlayer<170 && angleDegreesPlayer>100) { //abajo izquierda
                     ctx.drawImage(fishImage3dLeftDown, player.x, player.y);
                 }
+            }
             });
         }
 
@@ -184,17 +241,41 @@
                 x += velocityX;
                 y += velocityY;
             }
-            socket.send(JSON.stringify({ id: playerId, x: x, y: y, dy:dy, dx:dx }));
+
+            if(x>1000 && y>600 && roomId===512) {
+                x=30;
+                y=0;
+                mouseX=100;
+                mouseY=100;
+                roomId=206;
+            } 
+
+            socket.send(JSON.stringify({ id: playerId, x: x, y: y, dy:dy, dx:dx, roomId:roomId, name:name, message:message }));
         }
+        
+        function selectRoom() {
+           let idRoom = document.getElementById('roomIdSelector').value;
+           roomId = parseInt(idRoom, 10);
+        }
+
+        function changeName() {
+            name = document.getElementById('nameChanger').value;
+         }
+
+         function messageF () {
+            message = document.getElementById('sendMessage').value;
+         }
     
         function gameLoop() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-            drawBackground();
+            if (roomId===512) drawBackground(); 
+            if (roomId===206) drawBackground2();
             update();
             drawOtherPlayers();
             drawFish(x, y);
             requestAnimationFrame(gameLoop);
         }
+
         ctx.fillRect(500, 300, 200, 200);
         setTimeout(function() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
