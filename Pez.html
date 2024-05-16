@@ -35,10 +35,13 @@
         let dy;
         let angle;
         let angleDegrees;
+        let anglemv;
+        let angleDegreesmv;
         let roomId = 512;
         let name= playerId.toString();
         let message = "";
         let timeMessage = 0;
+        let movement=false;
 
         const backgroundImage = new Image();
         backgroundImage.src = 'Fondo.jpg';
@@ -81,7 +84,7 @@
     
         socket.onopen = function() {
             console.log('Connected to the server');
-            socket.send(JSON.stringify({ id: playerId, x: x, y: y, dy:dy, dx:dx, roomId:roomId, name:name, message:message}));
+            socket.send(JSON.stringify({ id: playerId, x: x, y: y, dy:dy, dx:dx, roomId:roomId, name:name, message:message, angleDegreesmv:angleDegreesmv}));
         };
         
         socket.onclose = function() {
@@ -95,7 +98,7 @@
         socket.onmessage = function(event) {
             const data = JSON.parse(event.data);
             if (data.id && data.id !== playerId) { 
-                otherPlayers[data.id] = { x: data.x, y: data.y, dy:data.dy, dx:data.dx, roomId:data.roomId, name:data.name, message:data.message };
+                otherPlayers[data.id] = { x: data.x, y: data.y, dy:data.dy, dx:data.dx, roomId:data.roomId, name:data.name, message:data.message, angleDegreesmv:data.angleDegreesmv };
             }
         };
         
@@ -117,6 +120,8 @@
 
         let x = 50;
         let y = 300;
+        let xmv= 0;
+        let ymv= 0;
         const speed = 5;
         let mouseX = x;
         let mouseY = y;
@@ -125,6 +130,14 @@
             mouseX = event.clientX - canvas.offsetLeft;
             mouseY = event.clientY - canvas.offsetTop;
             mainSong.play().catch(e => console.error('Error playing the audio:', e));
+        });
+
+        canvas.addEventListener('mousemove', function (event) {
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            xmv = (event.clientX - rect.left) * scaleX;
+            ymv = (event.clientY - rect.top) * scaleY;
         });
     
         function drawBackground() {
@@ -140,89 +153,90 @@
             ctx.font = "bold 20px serif";
             ctx.fillText(name,x+64,y+180);
             ctx.closePath();
-            if (message!="" && timeMessage<=1000) {
-                timeMessage++;
-                console.log(timeMessage)
+            if (message!="" && timeMessage<=600) {
+                //console.log(timeMessage)
                 ctx.beginPath();
-                ctx.fillStyle = 'white'
-                ctx.fillRect(x+150, y-70, 150, 100)
+                ctx.fillStyle = 'rgba(256, 256, 256, 0.8)';
+                ctx.fillRect(x+145, y-50, ctx.measureText(message).width+10, 50)
                 ctx.fillStyle = 'black'
-                ctx.fillText(message,x+180,y-20);
+                ctx.fillText(message,x+151,y-20);
                 ctx.closePath();
+                timeMessage++;
             }
-            if (timeMessage >1000) {
+            if (timeMessage >600) {
                 timeMessage = 0;
                 message = "";
             }
-            if(angleDegrees>-100 && angleDegrees<-80) { //arriba
+            if(angleDegreesmv>-100 && angleDegreesmv<-80) { //arriba
                 ctx.drawImage(fishImage3dUp, x, y);
              }
-             if(angleDegrees<100 && angleDegrees>80) { //abajo
+             if(angleDegreesmv<100 && angleDegreesmv>80) { //abajo
             ctx.drawImage(fishImage3dFront, x, y);
             }
-            if(angleDegrees>-10 && angleDegrees<10) { //derecha
+            if(angleDegreesmv>-10 && angleDegreesmv<10) { //derecha
                  ctx.drawImage(fishImage3dRight, x, y);
             }
-            if(angleDegrees>-80 && angleDegrees<-10) { //arriba derecha
+            if(angleDegreesmv>-80 && angleDegreesmv<-10) { //arriba derecha
                 ctx.drawImage(fishImage3dRightSideUp, x, y);
            }
-            if(angleDegrees<80 && angleDegrees>10) { //abajo derecha
+            if(angleDegreesmv<80 && angleDegreesmv>10) { //abajo derecha
                 ctx.drawImage(fishImage3dRightSideDown, x, y);
            }
-            if(angleDegrees<-170 || angleDegrees>170) { //izquierda
+            if(angleDegreesmv<-170 || angleDegreesmv>170) { //izquierda
                 ctx.drawImage(fishImage3dLeft, x, y);
             }
-            if(angleDegrees>-170 && angleDegrees<-100) { //arriba izquierda
+            if(angleDegreesmv>-170 && angleDegreesmv<-100) { //arriba izquierda
                 ctx.drawImage(fishImage3dLeftUp, x, y);
             }
-            if(angleDegrees<170 && angleDegrees>100) { //abajo izquierda
+            if(angleDegreesmv<170 && angleDegreesmv>100) { //abajo izquierda
                 ctx.drawImage(fishImage3dLeftDown, x, y);
             }
         }
 
         function drawOtherPlayers() {
             Object.values(otherPlayers).forEach(player => {
-                console.log(roomId)
-                console.log(player.roomId)
+                //console.log(roomId)
+                //console.log(player.roomId)
                 if (roomId===player.roomId) {
-                ctx.font = "bold 20px serif";
-                ctx.fillText(player.name,player.x+64,player.y+180);
-                if (player.message!="") {
-                    console.log(player.message);
-                    ctx.beginPath();
-                    ctx.fillStyle = 'white'
-                    ctx.fillRect(player.x+150, player.y-70, 150, 100)
-                    ctx.fillStyle = 'black'
-                    ctx.fillText(player.message,player.x+180,player.y-20);
-                    ctx.closePath();
+                    ctx.font = "bold 20px serif";
+                    ctx.fillText(player.name,player.x+64,player.y+180);
+                    if (player.message!="") {
+                        //console.log(timeMessage)
+                        ctx.beginPath();
+                        ctx.fillStyle = 'rgba(256, 256, 256, 0.8)';
+                        ctx.fillRect(player.x+145, player.y-50, ctx.measureText(player.message).width+10, 50)
+                        ctx.fillStyle = 'black'
+                        ctx.fillText(player.message,player.x+151,player.y-20);
+                        ctx.closePath();
+                        timeMessage++;
+                    }
+                    anglePlayer = Math.atan2(player.dy, player.dx);
+                    angleDegreesPlayer = anglePlayer * (180 / Math.PI);
+                    //console.log(`player: ${player.dy}`)
+                    if(player.angleDegreesmv>-100 && player.angleDegreesmv<-80) { //arriba
+                        ctx.drawImage(fishImage3dUp, player.x, player.y);
+                    }
+                    if(player.angleDegreesmv<100 && player.angleDegreesmv>80) { //abajo
+                    ctx.drawImage(fishImage3dFront, player.x, player.y);
+                    }
+                    if(player.angleDegreesmv>-10 && player.angleDegreesmv<10) { //derecha
+                        ctx.drawImage(fishImage3dRight, player.x, player.y);
+                    }
+                    if(player.angleDegreesmv>-80 && player.angleDegreesmv<-10) { //arriba derecha
+                        ctx.drawImage(fishImage3dRightSideUp, player.x, player.y);
                 }
-                anglePlayer = Math.atan2(player.dy, player.dx);
-                angleDegreesPlayer = anglePlayer * (180 / Math.PI);
-                console.log(`player: ${player.dy}`)
-                if(angleDegreesPlayer>-100 && angleDegreesPlayer<-80) { //arriba
-                    ctx.drawImage(fishImage3dUp, player.x, player.y);
-                 }
-                 if(angleDegreesPlayer<100 && angleDegreesPlayer>80) { //abajo
-                ctx.drawImage(fishImage3dFront, player.x, player.y);
+                    if(player.angleDegreesmv<80 && player.angleDegreesmv>10) { //abajo derecha
+                        ctx.drawImage(fishImage3dRightSideDown, player.x, player.y);
                 }
-                if(angleDegreesPlayer>-10 && angleDegreesPlayer<10) { //derecha
-                     ctx.drawImage(fishImage3dRight, player.x, player.y);
-                }
-                if(angleDegreesPlayer>-80 && angleDegreesPlayer<-10) { //arriba derecha
-                    ctx.drawImage(fishImage3dRightSideUp, player.x, player.y);
-               }
-                if(angleDegreesPlayer<80 && angleDegreesPlayer>10) { //abajo derecha
-                    ctx.drawImage(fishImage3dRightSideDown, player.x, player.y);
-               }
-                if(angleDegreesPlayer<-170 || angleDegreesPlayer>170) { //izquierda
-                    ctx.drawImage(fishImage3dLeft, player.x, player.y);
-                }
-                if(angleDegreesPlayer>-170 && angleDegreesPlayer<-100) { //arriba izquierda
-                    ctx.drawImage(fishImage3dLeftUp, player.x, player.y);
-                }
-                if(angleDegreesPlayer<170 && angleDegreesPlayer>100) { //abajo izquierda
-                    ctx.drawImage(fishImage3dLeftDown, player.x, player.y);
-                }
+                    if(player.angleDegreesmv<-170 || player.angleDegreesmv>170) { //izquierda
+                        ctx.drawImage(fishImage3dLeft, player.x, player.y);
+                    }
+                    if(player.angleDegreesmv>-170 && player.angleDegreesmv<-100) { //arriba izquierda
+                        ctx.drawImage(fishImage3dLeftUp, player.x, player.y);
+                    }
+                    if(player.angleDegreesmv<170 && player.angleDegreesmv>100) { //abajo izquierda
+                        ctx.drawImage(fishImage3dLeftDown, player.x, player.y);
+                    }
             }
             });
         }
@@ -232,7 +246,17 @@
             dy = (mouseY-100) - y;
             angle = Math.atan2(dy, dx);
             angleDegrees = angle * (180 / Math.PI);
-            console.log(angleDegrees);
+            //console.log(angleDegrees);
+            console.log(`x: ${x} y: ${y} xmv: ${xmv} ymy: ${ymv} dx:${dx} dy:${dy}`)
+            if (movement==false) {
+                if (xmv < x+66 || xmv > x + 100 || ymv < y+80 || ymv > y + 102) {
+                    dxmv = (xmv - 69) - x;
+                    dymv = (ymv - 99) - y;
+                    anglemv = Math.atan2(dymv, dxmv);
+                    angleDegreesmv = anglemv * (180 / Math.PI);
+                    //console.log(angleDegreesmv);
+                }
+            }
             
             let velocityX = Math.cos(angle) * speed;
             let velocityY = Math.sin(angle) * speed;
@@ -243,14 +267,21 @@
             }
 
             if(x>1000 && y>600 && roomId===512) {
-                x=30;
-                y=0;
-                mouseX=100;
-                mouseY=100;
+                x=100;
+                y=100;
+                mouseX=170;
+                mouseY=200;
                 roomId=206;
+            }
+            if(x<0 && y<0 && roomId===206) {
+                x=1000;
+                y=600;
+                mouseX=1070;
+                mouseY=700;
+                roomId=512;
             } 
 
-            socket.send(JSON.stringify({ id: playerId, x: x, y: y, dy:dy, dx:dx, roomId:roomId, name:name, message:message }));
+            socket.send(JSON.stringify({ id: playerId, x: x, y: y, dy:dy, dx:dx, roomId:roomId, name:name, message:message, angleDegreesmv:angleDegreesmv }));
         }
         
         function selectRoom() {
