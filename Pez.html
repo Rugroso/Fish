@@ -4,8 +4,9 @@
     <meta charset="UTF-8">
     <title>Fish</title>
     <style>
-        canvas {
+        #gameCanvas {
             border: 1px solid black;
+            cursor: default;
         }
     </style>
 </head>
@@ -28,9 +29,9 @@
     <script>
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
-        let socket = new WebSocket('ws://192.168.10.146:3000');
+        let socket = new WebSocket('ws://192.168.0.100:3000');
         let otherPlayers = {};
-        let playerId = Math.floor(Math.random()*10000);
+        let id = Math.floor(Math.random()*10000);
         let dx;
         let dy;
         let angle;
@@ -38,15 +39,21 @@
         let anglemv;
         let angleDegreesmv;
         let roomId = 512;
-        let name= playerId.toString();
+        let name= id.toString();
         let message = "";
         let timeMessage = 0;
         let movement=false;
+        let allMouseX = -100;
+        let allMouseY = -100;
 
         const backgroundImage = new Image();
         backgroundImage.src = 'Fondo.jpg';
+
         const backgroundImage2 = new Image();
         backgroundImage2.src = 'Fondo2.jpg';
+
+        const backgroundImage3 = new Image();
+        backgroundImage3.src = 'Cetys.jpg';
 
         //const fishImage = new Image();
         //fishImage.src = 'Sprite.png';
@@ -79,12 +86,14 @@
         const fishImage3dLeftDown = new Image();
         fishImage3dLeftDown.src = 'LeftSideFishDown.png';
 
-
         const mainSong = new Audio('fishMainMusic.mp3');
+        mainSong.volume = 0.1;
+        const chatSound = new Audio('chatSoundEffect.mp3');
+        chatSound.volume = 1.0;
     
         socket.onopen = function() {
             console.log('Connected to the server');
-            socket.send(JSON.stringify({ id: playerId, x: x, y: y, dy:dy, dx:dx, roomId:roomId, name:name, message:message, angleDegreesmv:angleDegreesmv}));
+            socket.send(JSON.stringify({ id: id, x: x, y: y, dy:dy, dx:dx, roomId:roomId, name:name, message:message, angleDegreesmv:angleDegreesmv, timeMessage:timeMessage}));
         };
         
         socket.onclose = function() {
@@ -97,8 +106,8 @@
 
         socket.onmessage = function(event) {
             const data = JSON.parse(event.data);
-            if (data.id && data.id !== playerId) { 
-                otherPlayers[data.id] = { x: data.x, y: data.y, dy:data.dy, dx:data.dx, roomId:data.roomId, name:data.name, message:data.message, angleDegreesmv:data.angleDegreesmv };
+            if (data.id && data.id !== id) { 
+                otherPlayers[data.id] = {id:data.id, x: data.x, y: data.y, dy:data.dy, dx:data.dx, roomId:data.roomId, name:data.name, message:data.message, angleDegreesmv:data.angleDegreesmv, timeMessage:data.timeMessage };
             }
         };
         
@@ -109,29 +118,22 @@
         
         function sendMessage() {
             if (socket.readyState === WebSocket.OPEN) {
-                socket.send(JSON.stringify({ id: playerId, x: x, y: y }));
+                socket.send(JSON.stringify({ id: id, x: x, y: y }));
             } else if (socket.readyState === WebSocket.CONNECTING) {
                 setTimeout(sendMessage, 100);
             } else {
                 console.log("WebSocket is not open and cannot send messages:", socket.readyState);
             }
         }
-                
 
         let x = 50;
         let y = 300;
         let xmv= 0;
         let ymv= 0;
-        const speed = 5;
+        const speed = 8;
         let mouseX = x;
         let mouseY = y;
     
-        canvas.addEventListener('click', function(event) {
-            mouseX = event.clientX - canvas.offsetLeft;
-            mouseY = event.clientY - canvas.offsetTop;
-            mainSong.play().catch(e => console.error('Error playing the audio:', e));
-        });
-
         canvas.addEventListener('mousemove', function (event) {
             const rect = canvas.getBoundingClientRect();
             const scaleX = canvas.width / rect.width;
@@ -140,11 +142,14 @@
             ymv = (event.clientY - rect.top) * scaleY;
         });
     
-        function drawBackground() {
+        function drawRoom512() {
             ctx.drawImage(backgroundImage, 0, 0, canvas.width, canvas.height);
         }
-        function drawBackground2() {
+        function drawRoom206() {
             ctx.drawImage(backgroundImage2, 0, 0, canvas.width, canvas.height);
+        }
+        function drawRoom0() {
+            ctx.drawImage(backgroundImage3, 0, 0, canvas.width, canvas.height);
         }
     
          function drawFish(x, y) {
@@ -153,17 +158,20 @@
             ctx.font = "bold 20px serif";
             ctx.fillText(name,x+64,y+180);
             ctx.closePath();
-            if (message!="" && timeMessage<=600) {
-                //console.log(timeMessage)
+            if (message!="" && timeMessage<=180) {
                 ctx.beginPath();
                 ctx.fillStyle = 'rgba(256, 256, 256, 0.8)';
                 ctx.fillRect(x+145, y-50, ctx.measureText(message).width+10, 50)
                 ctx.fillStyle = 'black'
                 ctx.fillText(message,x+151,y-20);
                 ctx.closePath();
+                console.log(timeMessage);
                 timeMessage++;
             }
-            if (timeMessage >600) {
+            if (timeMessage==1) {
+                chatSound.play();
+            }
+            if (timeMessage>180) {
                 timeMessage = 0;
                 message = "";
             }
@@ -191,7 +199,25 @@
             if(angleDegreesmv<170 && angleDegreesmv>100) { //abajo izquierda
                 ctx.drawImage(fishImage3dLeftDown, x, y);
             }
+
+            if (xmv > x && xmv < x + 200 && ymv > y+35 && ymv < y + 160) {
+                document.getElementById('gameCanvas').style.cursor = 'pointer';
+                selection=true;
+                //console.log(angleDegreesmv);
+            }
+            if (selection) {
+                canvas.removeEventListener('click', handleMouseClick) ;
+            }
+            if (!selection) {
+                canvas.addEventListener('click', handleMouseClick);
+            }
+
+            if (allMouseX > x && allMouseX < x + 200 && allMouseY > y+35 && allMouseY < y + 160) {
+                alert (`Te has autoclickeado!!`);
+            }
         }
+
+        let drawPosition=false;
 
         function drawOtherPlayers() {
             Object.values(otherPlayers).forEach(player => {
@@ -201,14 +227,15 @@
                     ctx.font = "bold 20px serif";
                     ctx.fillText(player.name,player.x+64,player.y+180);
                     if (player.message!="") {
-                        //console.log(timeMessage)
                         ctx.beginPath();
                         ctx.fillStyle = 'rgba(256, 256, 256, 0.8)';
                         ctx.fillRect(player.x+145, player.y-50, ctx.measureText(player.message).width+10, 50)
                         ctx.fillStyle = 'black'
                         ctx.fillText(player.message,player.x+151,player.y-20);
                         ctx.closePath();
-                        timeMessage++;
+                    }
+                    if (player.timeMessage == 1) {
+                        chatSound.play().catch(e => console.error('Error playing the audio:', e));;
                     }
                     anglePlayer = Math.atan2(player.dy, player.dx);
                     angleDegreesPlayer = anglePlayer * (180 / Math.PI);
@@ -224,10 +251,10 @@
                     }
                     if(player.angleDegreesmv>-80 && player.angleDegreesmv<-10) { //arriba derecha
                         ctx.drawImage(fishImage3dRightSideUp, player.x, player.y);
-                }
+                    }
                     if(player.angleDegreesmv<80 && player.angleDegreesmv>10) { //abajo derecha
                         ctx.drawImage(fishImage3dRightSideDown, player.x, player.y);
-                }
+                    }
                     if(player.angleDegreesmv<-170 || player.angleDegreesmv>170) { //izquierda
                         ctx.drawImage(fishImage3dLeft, player.x, player.y);
                     }
@@ -237,9 +264,37 @@
                     if(player.angleDegreesmv<170 && player.angleDegreesmv>100) { //abajo izquierda
                         ctx.drawImage(fishImage3dLeftDown, player.x, player.y);
                     }
+                    if (xmv > player.x && xmv < player.x + 200 && ymv > player.y+35 && ymv < player.y + 160) {
+                        document.getElementById('gameCanvas').style.cursor = 'pointer';
+                        selection=true;
+                    }
+                    if (selection) {
+                        canvas.removeEventListener('click', handleMouseClick) ;
+                    }
+                    if (!selection) {
+                        canvas.addEventListener('click', handleMouseClick);
+                    }
+        
+                    if (allMouseX > player.x && allMouseX < player.x + 200 && allMouseY > player.y+35 && allMouseY < player.y + 160) {
+                        alert (`has dado clic sobre el jugador con id ${player.id}`);
+                    }
             }
             });
         }
+
+        function handleMouseClick(event) {
+            mouseX = event.clientX - canvas.offsetLeft;
+            mouseY = event.clientY - canvas.offsetTop;
+            mainSong.play().catch(e => console.error('Error playing the audio:', e));
+        }
+
+        function allTimeClick(event) {
+            allMouseX = event.clientX - canvas.offsetLeft;
+            allMouseY = event.clientY - canvas.offsetTop;
+            console.log (`clic en x: ${allMouseX} clic en y: ${allMouseY}`);
+        }
+        canvas.addEventListener('click', allTimeClick)
+        let selection = false;
 
         function update() {
             dx = (mouseX-70) - x;
@@ -247,17 +302,17 @@
             angle = Math.atan2(dy, dx);
             angleDegrees = angle * (180 / Math.PI);
             //console.log(angleDegrees);
-            console.log(`x: ${x} y: ${y} xmv: ${xmv} ymy: ${ymv} dx:${dx} dy:${dy}`)
-            if (movement==false) {
-                if (xmv < x+66 || xmv > x + 100 || ymv < y+80 || ymv > y + 102) {
-                    dxmv = (xmv - 69) - x;
-                    dymv = (ymv - 99) - y;
-                    anglemv = Math.atan2(dymv, dxmv);
-                    angleDegreesmv = anglemv * (180 / Math.PI);
-                    //console.log(angleDegreesmv);
-                }
+            //console.log(`x: ${x} y: ${y} xmv: ${xmv} ymy: ${ymv} dx:${dx} dy:${dy}`)
+            if (xmv < x+60 || xmv > x + 100 || ymv < y+80 || ymv > y + 102) {
+                dxmv = (xmv - 69) - x;
+                dymv = (ymv - 99) - y;
+                anglemv = Math.atan2(dymv, dxmv);
+                angleDegreesmv = anglemv * (180 / Math.PI);
+                document.getElementById('gameCanvas').style.cursor = 'default';
+                selection=false;
+                //console.log(angleDegreesmv);
             }
-            
+
             let velocityX = Math.cos(angle) * speed;
             let velocityY = Math.sin(angle) * speed;
         
@@ -266,22 +321,26 @@
                 y += velocityY;
             }
 
-            if(x>1000 && y>600 && roomId===512) {
+            if(x>1000 && y>600 && roomId===512) { //cambio de roomId en la sala principal
                 x=100;
                 y=100;
                 mouseX=170;
                 mouseY=200;
                 roomId=206;
             }
-            if(x<0 && y<0 && roomId===206) {
+            
+            if(x<0 && y<0 && roomId===206) { //cambio de roomId en la sala 206
                 x=1000;
                 y=600;
                 mouseX=1070;
                 mouseY=700;
                 roomId=512;
-            } 
-
-            socket.send(JSON.stringify({ id: playerId, x: x, y: y, dy:dy, dx:dx, roomId:roomId, name:name, message:message, angleDegreesmv:angleDegreesmv }));
+            }
+            //Dibujo de sala actual
+            if (roomId===512) drawRoom512();
+            if (roomId===206) drawRoom206();
+            if (roomId===0) drawRoom0();
+            socket.send(JSON.stringify({ id: id, x: x, y: y, dy:dy, dx:dx, roomId:roomId, name:name, message:message, angleDegreesmv:angleDegreesmv, timeMessage:timeMessage }));
         }
         
         function selectRoom() {
@@ -295,18 +354,72 @@
 
          function messageF () {
             message = document.getElementById('sendMessage').value;
+            timeMessage=0;
          }
     
-        function gameLoop() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            if (roomId===512) drawBackground(); 
-            if (roomId===206) drawBackground2();
-            update();
-            drawOtherPlayers();
-            drawFish(x, y);
-            requestAnimationFrame(gameLoop);
-        }
-
+         let lastFrameTime = Date.now();
+         const frameRate = 1000 / 60;
+        let xgpx = 0;
+        let ygpx = 400;
+        let speedg = 1;
+         function gameLoop() {
+             const now = Date.now();
+             const deltaTime = now - lastFrameTime;
+             if (deltaTime >= frameRate) {
+                if (roomId!=1) speedg = 1; //Esto reinicia la velocidad del cuadro cada que sales del minijuego
+                if (roomId==1) { //MINIJUEGO 1, The 10px Game
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    canvas.removeEventListener('click', handleMouseClick) ;
+                    x=-500;
+                    y=-500;
+                    mouseY = -400;
+                    mouseX = -430;
+                    xgpx+=speedg;
+                    ctx.fillRect(xgpx,ygpx,10,10)
+                    if(xgpx>1200){
+                        xgpx=0;
+                    }
+                    if (allMouseX > xgpx && allMouseX < xgpx+10 && allMouseY > ygpx && allMouseY < ygpx+10) {
+                        alert('Has ganado!!')
+                        allMouseX = -500;
+                        allMouseY = -500;
+                        speedg++;
+                    }
+                }
+                if (roomId==2) { 
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    canvas.removeEventListener('click', handleMouseClick) ;
+                    x=-500;
+                    y=-500;
+                    mouseX = -400;
+                    mouseY = -430;
+                }
+                if (roomId==3) {
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    canvas.removeEventListener('click', handleMouseClick) ;
+                    x=-500;
+                    y=-500;
+                    mouseX = -400;
+                    mouseY = -430;
+                }
+                if (roomId!=1 && roomId !=2 && roomId !=3) { // Las 3 salas representan 3 juegos dentro de Fish que no involucran el uso de los peces y el update es distinto
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    update();
+                    drawOtherPlayers();
+                    drawFish(x, y);
+                    lastFrameTime = now - (deltaTime % frameRate);
+                    allMouseX = -1000;
+                    allMouseY = -1000;
+                    if (x<-300 || x<-300) {
+                        x=400;
+                        y=400;
+                        mouseX=470;
+                        mouseY=500;
+                    }
+                }
+             }
+             requestAnimationFrame(gameLoop);
+         }
         ctx.fillRect(500, 300, 200, 200);
         setTimeout(function() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
