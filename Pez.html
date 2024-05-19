@@ -133,7 +133,31 @@
         const speed = 8;
         let mouseX = x;
         let mouseY = y;
-    
+        
+        function handleMouseClick(event) {
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;    // Escala en el eje X
+            const scaleY = canvas.height / rect.height;  // Escala en el eje Y
+        
+            mouseX = (event.clientX - rect.left) * scaleX;
+            mouseY = (event.clientY - rect.top) * scaleY;
+        
+            mainSong.play().catch(e => console.error('Error playing the audio:', e));
+        }
+        
+
+        function allTimeClick(event) {
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;    // Escala en el eje X
+            const scaleY = canvas.height / rect.height;  // Escala en el eje Y
+        
+            allMouseX = (event.clientX - rect.left) * scaleX;
+            allMouseY = (event.clientY - rect.top) * scaleY;
+        
+            console.log (`clic en x: ${allMouseX} clic en y: ${allMouseY}`);
+        }
+        canvas.addEventListener('click', allTimeClick)
+
         canvas.addEventListener('mousemove', function (event) {
             const rect = canvas.getBoundingClientRect();
             const scaleX = canvas.width / rect.width;
@@ -282,18 +306,6 @@
             });
         }
 
-        function handleMouseClick(event) {
-            mouseX = event.clientX - canvas.offsetLeft;
-            mouseY = event.clientY - canvas.offsetTop;
-            mainSong.play().catch(e => console.error('Error playing the audio:', e));
-        }
-
-        function allTimeClick(event) {
-            allMouseX = event.clientX - canvas.offsetLeft;
-            allMouseY = event.clientY - canvas.offsetTop;
-            console.log (`clic en x: ${allMouseX} clic en y: ${allMouseY}`);
-        }
-        canvas.addEventListener('click', allTimeClick)
         let selection = false;
 
         function update() {
