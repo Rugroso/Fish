@@ -29,7 +29,7 @@
     <script>
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
-        let socket = new WebSocket('ws://192.168.0.100:3000');
+        let socket = new WebSocket('ws://10.4.65.139:3000');
         let otherPlayers = {};
         let id = Math.floor(Math.random()*10000);
         let dx;
@@ -99,7 +99,7 @@
         socket.onclose = function() {
             console.log("WebSocket connection closed unexpectedly.");
             setTimeout(function() {
-                socket = new WebSocket('ws://192.168.10.146:3000');
+                socket = new WebSocket('ws://10.37.129.2:3000'); //Cambien esto por su direccion ip, les sale al abrir live server configurandolo para que abra un servidor en el LAN (area local), no cambien nada mas que solo la direccion el puerto (:3000 se queda igual)
                 attachSocketHandlers();
             }, 1000); 
         };
@@ -136,8 +136,8 @@
         
         function handleMouseClick(event) {
             const rect = canvas.getBoundingClientRect();
-            const scaleX = canvas.width / rect.width;    // Escala en el eje X
-            const scaleY = canvas.height / rect.height;  // Escala en el eje Y
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
         
             mouseX = (event.clientX - rect.left) * scaleX;
             mouseY = (event.clientY - rect.top) * scaleY;
@@ -148,8 +148,8 @@
 
         function allTimeClick(event) {
             const rect = canvas.getBoundingClientRect();
-            const scaleX = canvas.width / rect.width;    // Escala en el eje X
-            const scaleY = canvas.height / rect.height;  // Escala en el eje Y
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
         
             allMouseX = (event.clientX - rect.left) * scaleX;
             allMouseY = (event.clientY - rect.top) * scaleY;
@@ -368,8 +368,8 @@
             message = document.getElementById('sendMessage').value;
             timeMessage=0;
          }
-    
-         let lastFrameTime = Date.now();
+         let lastFrameTime
+        lastFrameTime = Date.now();
          const frameRate = 1000 / 60;
         let xgpx = 0;
         let ygpx = 400;
@@ -381,6 +381,7 @@
                 if (roomId!=1) speedg = 1; //Esto reinicia la velocidad del cuadro cada que sales del minijuego
                 if (roomId==1) { //MINIJUEGO 1, The 10px Game
                     ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    socket.send(JSON.stringify({ id: id, x: x, y: y, dy:dy, dx:dx, roomId:roomId, name:name, message:message, angleDegreesmv:angleDegreesmv, timeMessage:timeMessage }));
                     canvas.removeEventListener('click', handleMouseClick) ;
                     x=-500;
                     y=-500;
@@ -400,6 +401,7 @@
                 }
                 if (roomId==2) { 
                     ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    socket.send(JSON.stringify({ id: id, x: x, y: y, dy:dy, dx:dx, roomId:roomId, name:name, message:message, angleDegreesmv:angleDegreesmv, timeMessage:timeMessage }));
                     canvas.removeEventListener('click', handleMouseClick) ;
                     x=-500;
                     y=-500;
@@ -408,6 +410,7 @@
                 }
                 if (roomId==3) {
                     ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    socket.send(JSON.stringify({ id: id, x: x, y: y, dy:dy, dx:dx, roomId:roomId, name:name, message:message, angleDegreesmv:angleDegreesmv, timeMessage:timeMessage }));
                     canvas.removeEventListener('click', handleMouseClick) ;
                     x=-500;
                     y=-500;
@@ -419,7 +422,6 @@
                     update();
                     drawOtherPlayers();
                     drawFish(x, y);
-                    lastFrameTime = now - (deltaTime % frameRate);
                     allMouseX = -1000;
                     allMouseY = -1000;
                     if (x<-300 || x<-300) {
@@ -429,6 +431,7 @@
                         mouseY=500;
                     }
                 }
+                lastFrameTime = now - (deltaTime % frameRate);
              }
              requestAnimationFrame(gameLoop);
          }
