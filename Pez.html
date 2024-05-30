@@ -4,14 +4,140 @@
     <meta charset="UTF-8">
     <title>Fish</title>
     <style>
+        body {
+            background-color: rgb(181, 239, 239);
+            width: 100%;
+            height: 100%;
+        }
         #gameCanvas {
             border: 1px solid black;
             cursor: default;
         }
+        #backgroundImg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1; 
+        }
+      
+        #container {
+            position: relative;
+            width: 1200px; 
+            height: 690px; 
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .posicionBotones {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        position: absolute; 
+        width: 100%; 
+        bottom: -170px; 
+    }
+
+        .posicionBotones button {
+        background-color: #2f7cc8; 
+        border: none;
+        color: white;
+        padding: 10px 30px;
+        text-align: center;
+        text-decoration: none;
+        display: inline-block;
+        font-size: 14px;
+        margin: 4px 2px;
+        transition-duration: 0.4s;
+        cursor: pointer;
+        border-radius: 8px; 
+        box-shadow: 0 4px #0056b3; 
+        align-items: center;
+        justify-content: center;
+        }
+
+    .posicionBotones button:hover {
+        background-color: #0056b3; 
+        box-shadow: 0 5px #003d7a; 
+        color: #D0EFFF; 
+    }
+
+    .posicionBotones input[type="number"], .posicionBotones input[type="text"] {
+        padding: 10px;
+        margin: 4px 2px;
+        border: 2px solid #007BFF; 
+        border-radius: 4px; 
+    }
+
+        #juego {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .marco {
+        position: absolute;
+        pointer-events: none; 
+        
+        }
+
+        .marcoArriba, .marcoAbajo, .marcoDerecha, .marcoIzquierda {
+        position: absolute;
+        width: auto; 
+        height: auto; 
+        }
+
+
+        .marcoArriba {
+            position: absolute;
+        top: -345px;
+        left: -600px;
+        }
+
+        .marcoAbajo {
+        position: absolute;
+        bottom: -345px;
+        left: -600px;
+        }
+
+        .marcoDerecha {
+        top: -345px;
+        bottom: 0;
+        right: -600px;
+        }
+
+        .marcoIzquierda {
+        position: absolute;
+        bottom: -345px;
+        left: -600px;
+        }
+
+         
+
+        
+
     </style>
 </head>
 <body>
-    <div>
+    <img src="fish logo.png" alt="Logo del Juego" style="display: block; margin: 0 auto; width: 300px;"> 
+    <div id="juego">
+        <div id="container">
+            <div class="marco">
+                
+                <img class="marcoDerecha" src="marco/marco der.png" alt="Marco Derecha">
+                <img class="marcoIzquierda" src="marco/marco izq.png" alt="Marco Izquierda">
+                <img class="marcoAbajo" src="marco/marco abajo.png" alt="Marco Abajo">
+                <img class="marcoArriba" src="marco/marco arriba.png" alt="Marco Arriba">
+                
+            </div>
+
+            <img id="backgroundImg" src="gif.gif" alt="Ocean Background">
+            <canvas id="gameCanvas" width="1200" height="690"></canvas>
+        </div>
+    </div>
+    <div class="posicionBotones">
         <input type="number" name="roomIdSelector" id="roomIdSelector">
         <button onclick="selectRoom()">
             IR A LA SALA
@@ -25,11 +151,10 @@
             ENVIAR MENSAJE
         </button>
     </div>
-    <canvas id="gameCanvas" width="1200" height="800"></canvas>
-    <script>
+        <script>
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
-        let socket = new WebSocket('ws://10.4.65.139:3000');
+        let socket = new WebSocket('ws://127.0.0.1:3000');
         let otherPlayers = {};
         let id = Math.floor(Math.random()*10000);
         let dx;
@@ -46,21 +171,13 @@
         let allMouseX = -100;
         let allMouseY = -100;
 
-        const backgroundImage = new Image();
-        backgroundImage.src = 'Fondo.jpg';
+        
 
         const backgroundImage2 = new Image();
         backgroundImage2.src = 'Fondo2.jpg';
 
         const backgroundImage3 = new Image();
         backgroundImage3.src = 'Cetys.jpg';
-
-        //const fishImage = new Image();
-        //fishImage.src = 'Sprite.png';
-
-        //const fishImageRight = new Image();
-        //fishImageRight.src = 'SpriteRight.png';
-
 
         const fishImage3dFront= new Image();
         fishImage3dFront.src = 'FishFront.png';
@@ -99,7 +216,7 @@
         socket.onclose = function() {
             console.log("WebSocket connection closed unexpectedly.");
             setTimeout(function() {
-                socket = new WebSocket('ws://10.37.129.2:3000'); //Cambien esto por su direccion ip, les sale al abrir live server configurandolo para que abra un servidor en el LAN (area local), no cambien nada mas que solo la direccion el puerto (:3000 se queda igual)
+                socket = new WebSocket('ws://10.4.80.109/:3000'); //Cambien esto por su direccion ip, les sale al abrir live server configurandolo para que abra un servidor en el LAN (area local), no cambien nada mas que solo la direccion el puerto (:3000 se queda igual)
                 attachSocketHandlers();
             }, 1000); 
         };
@@ -167,7 +284,7 @@
         });
     
         function drawRoom512() {
-            ctx.drawImage(backgroundImage, 0, 0, canvas.width, canvas.height);
+           //ctx.drawImage(backgroundImage, 0, 0, canvas.width, canvas.height);
         }
         function drawRoom206() {
             ctx.drawImage(backgroundImage2, 0, 0, canvas.width, canvas.height);
