@@ -37,7 +37,7 @@
         align-items: center;
         position: absolute; 
         width: 100%; 
-        bottom: -170px; 
+        margin-top: -55px;
     }
 
         .posicionBotones button {
@@ -113,15 +113,10 @@
         bottom: -345px;
         left: -600px;
         }
-
-         
-
-        
-
     </style>
 </head>
 <body>
-    <img src="fish logo.png" alt="Logo del Juego" style="display: block; margin: 0 auto; width: 300px;"> 
+    <img src="fish logo.png" alt="Logo del Juego" style="display: block; margin: 0 auto; width: 140px;"> 
     <div id="juego">
         <div id="container">
             <div class="marco">
@@ -154,7 +149,7 @@
         <script>
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
-        let socket = new WebSocket('ws://127.0.0.1:3000');
+        let socket = new WebSocket('ws://192.168.10.146:3000'); //Cambien esto por su direccion ip, les sale al abrir live server configurandolo para que abra un servidor en el LAN (area local), no cambien nada mas que solo la direccion el puerto (:3000 se queda igual)
         let otherPlayers = {};
         let id = Math.floor(Math.random()*10000);
         let dx;
@@ -170,8 +165,26 @@
         let movement=false;
         let allMouseX = -100;
         let allMouseY = -100;
+        let backRoomBool = false;
+        let contBackMessage = 0;
 
-        
+        const backRoom = new Image();
+        backRoom.src = 'Backroom.jpg';
+
+        const letreroId1 = new Image();
+        letreroId1.src = 'Letreroid1.png';
+
+        const letreroId2 = new Image();
+        letreroId2.src = 'Letreroid2.png';
+
+        const letreroId3 = new Image();
+        letreroId3.src = 'Letreroid3.png';
+
+        const letreroId4 = new Image();
+        letreroId4.src = 'Letreroid4.png';
+
+        const letreroId512 = new Image();
+        letreroId512.src = 'Letreroid512.png';
 
         const backgroundImage2 = new Image();
         backgroundImage2.src = 'Fondo2.jpg';
@@ -205,6 +218,16 @@
 
         const mainSong = new Audio('fishMainMusic.mp3');
         mainSong.volume = 0.1;
+        const backSong = new Audio('backSong.mp3');
+        backSong.volume = 0.1;
+        const cursedSong = new Audio('cursedSong.mp3');
+        cursedSong.volume = 1.0;
+        const minigameSong1= new Audio('minigameSong1.mp3');
+        cursedSong.volume = 0.1;
+        const minigameSong2 = new Audio('minigameSong2.mp3');
+        cursedSong.volume = 0.1;
+        const nostalgicSong = new Audio('nostalgicSong.mp3');
+        nostalgicSong.volume = 0.1;
         const chatSound = new Audio('chatSoundEffect.mp3');
         chatSound.volume = 1.0;
     
@@ -216,7 +239,7 @@
         socket.onclose = function() {
             console.log("WebSocket connection closed unexpectedly.");
             setTimeout(function() {
-                socket = new WebSocket('ws://10.4.80.109/:3000'); //Cambien esto por su direccion ip, les sale al abrir live server configurandolo para que abra un servidor en el LAN (area local), no cambien nada mas que solo la direccion el puerto (:3000 se queda igual)
+                socket = new WebSocket('ws://192.168.0.181:3000'); //Cambien esto por su direccion ip, les sale al abrir live server configurandolo para que abra un servidor en el LAN (area local), no cambien nada mas que solo la direccion el puerto (:3000 se queda igual)
                 attachSocketHandlers();
             }, 1000); 
         };
@@ -251,6 +274,21 @@
         let mouseX = x;
         let mouseY = y;
         
+        document.addEventListener('keydown', function(e) { //Estas funciones previenen el scroll del navegador con las flechas
+            if (['ArrowLeft', 'ArrowRight'].includes(e.key)) {
+                e.preventDefault(); 
+                basketDx = (e.key === 'ArrowLeft') ? -5 : 5;
+            }
+        });
+        
+        document.addEventListener('keyup', function(e) {
+            if (['ArrowLeft', 'ArrowRight'].includes(e.key)) {
+                e.preventDefault(); 
+                basketDx = 0;
+            }
+        });
+        
+
         function handleMouseClick(event) {
             const rect = canvas.getBoundingClientRect();
             const scaleX = canvas.width / rect.width;
@@ -258,8 +296,7 @@
         
             mouseX = (event.clientX - rect.left) * scaleX;
             mouseY = (event.clientY - rect.top) * scaleY;
-        
-            mainSong.play().catch(e => console.error('Error playing the audio:', e));
+            if (roomId === 512) mainSong.play().catch(e => console.error('Error playing the audio:', e));
         }
         
 
@@ -284,12 +321,40 @@
         });
     
         function drawRoom512() {
-           //ctx.drawImage(backgroundImage, 0, 0, canvas.width, canvas.height);
+           mainSong.play();
+           ctx.drawImage(letreroId1, 60, 460, 150, 150);
+           ctx.drawImage(letreroId2, 200, 470, 150, 150);
+           ctx.drawImage(letreroId3, 340, 480, 150, 150);
+           ctx.drawImage(letreroId4, 480, 490, 150, 150);
         }
+
         function drawRoom206() {
+            mainSong.play();
             ctx.drawImage(backgroundImage2, 0, 0, canvas.width, canvas.height);
         }
+        let contBack = 0;
+        function drawRoom666() {
+            ctx.drawImage(backRoom, 0, 0, canvas.width, canvas.height);
+            backRoomBool=true;
+            backSong.play();
+            let backEND = [];
+            let matrix = [];
+            if (contBack == 7) {
+                backSong.pause();
+                cursedSong.play();
+                for (let i = 0; i < 1000000000000000000; i++) {
+                    backEND.push({ x: Math.random(), y: Math.random() });
+                }
+                for (let i = 0; i < 1000000000000000; i++) {
+                    matrix.push([]);
+                    for (let j = 0; j < 10000000000000000; j++) {
+                        matrix[i].push(Math.random());
+                }
+            }
+    }
+        }
         function drawRoom0() {
+            mainSong.play();
             ctx.drawImage(backgroundImage3, 0, 0, canvas.width, canvas.height);
         }
     
@@ -450,7 +515,7 @@
                 y += velocityY;
             }
 
-            if(x>1000 && y>600 && roomId===512) { //cambio de roomId en la sala principal
+            if(x>800 && y>500 && roomId===512) { //cambio de roomId en la sala principal
                 x=100;
                 y=100;
                 mouseX=170;
@@ -459,21 +524,39 @@
             }
             
             if(x<0 && y<0 && roomId===206) { //cambio de roomId en la sala 206
-                x=1000;
-                y=600;
-                mouseX=1070;
-                mouseY=700;
+                x=800;
+                y=500;
+                mouseX=870;
+                mouseY=600;
                 roomId=512;
             }
             //Dibujo de sala actual
-            if (roomId===512) drawRoom512();
-            if (roomId===206) drawRoom206();
-            if (roomId===0) drawRoom0();
+            if (roomId===666) drawRoom666();
+            if (!backRoomBool) {
+                if (roomId===512) drawRoom512();
+                if (roomId===206) drawRoom206();
+                if (roomId===0) drawRoom0();
+            }
             socket.send(JSON.stringify({ id: id, x: x, y: y, dy:dy, dx:dx, roomId:roomId, name:name, message:message, angleDegreesmv:angleDegreesmv, timeMessage:timeMessage }));
         }
         
         function selectRoom() {
+            if (roomId==666) {
+                contBack++;
+                message="No puedes salir de aquí";
+            }
            let idRoom = document.getElementById('roomIdSelector').value;
+           let roomIdAux = parseInt(idRoom, 10);
+           if (roomIdAux != roomId) {
+                minigameSong1.pause()
+                minigameSong2.pause() 
+                nostalgicSong.pause()
+                mainSong.pause()
+                mainSong.currentTime = 0
+                minigameSong1.currentTime = 0
+                minigameSong2.currentTime = 0
+                nostalgicSong.currentTime = 0
+           }
            roomId = parseInt(idRoom, 10);
         }
 
@@ -487,17 +570,342 @@
          }
          let lastFrameTime
         lastFrameTime = Date.now();
-         const frameRate = 1000 / 60;
-        let xgpx = 0;
+        const frameRate = 1000 / 60;
+        //---------
+        let xgpx = 0; 
         let ygpx = 400;
         let speedg = 1;
+        //---------
+        let gameTimer2;
+        let fishInterval; 
+        let gameRunning2 = false;
+
+        function initializeFishGame() {
+            basketX = canvas.width / 2 - 50;
+            basketY = canvas.height - 150;
+            basketWidth = 100;
+            basketHeight = 100;
+            basketDx = 0;
+            fishes2 = [];
+            score2 = 0;
+            timerSeconds = 30; 
+        
+            fishImg2 = new Image();
+            fishImg2.src = 'fish.png';
+            basketImg2 = new Image();
+            basketImg2.src = 'basket.png';
+        
+            fishInterval = setInterval(createFish2, 1000);
+            gameTimer2 = setInterval(() => {
+                if (timerSeconds > 0) {
+                    timerSeconds--;
+                } else {
+                    endGame();
+                }
+            }, 1000);  // Update the timer every second
+        }
+        
+        function endGame() {
+            alert('Tiempo agotado! Tu puntuación fue: ' + score2);
+            cleanupGame();
+
+        }
+        
+        function cleanupGame() {
+            clearInterval(fishInterval);
+            clearInterval(gameTimer2);
+            fishes2 = [];
+            gameRunning2 = false;
+        }
+        
+        function createFish2() {
+            let fish = {
+                x: Math.random() * (canvas.width - 50),
+                y: 0,
+                width: 50,
+                height: 50,
+                dy: 2
+            };
+            fishes2.push(fish);
+        }
+        //------------
+        let fish3, bubbles3, score3, timer3, gameRunning3;
+        let fishImg3 = new Image();
+        let bubbleImg3 = new Image();
+        
+        fishImg3.onload = () => {
+            bubbleImg3.onload = () => {
+                if (roomId == 3) {
+                    initializeRoom3Game();
+                    requestAnimationFrame(gameLoop);
+                }
+            };
+            bubbleImg3.src = 'bubble.png';
+        };
+        fishImg3.src = 'fish.png';
+        
+        
+        function initializeRoom3Game() {
+            fish3 = {
+                x: canvas.width / 2 - 50,
+                y: canvas.height / 2 - 50,
+                width: 100,
+                height: 100,
+                dx: 0,
+                dy: 0
+            };
+            bubbles3 = [];
+            score3 = 0;
+            timer3 = 30;
+            gameRunning3 = true;
+        
+            bubbleInterval3 = setInterval(createBubble3, 2000);
+            timerInterval3 = setInterval(() => {
+                if (timer3 > 0) {
+                    timer3--;
+                } else {
+                    clearInterval(bubbleInterval3);
+                    clearInterval(timerInterval3);
+                    alert(`Tiempo agotado! Tu puntuación fue: ${score3}. El juego se reiniciará.`);
+                    initializeRoom3Game(); 
+                }
+            }, 1000);
+        }
+        
+        
+        function createBubble3() {
+            if (gameRunning3) {
+                let bubble = {
+                    x: Math.random() * (canvas.width - 50),
+                    y: Math.random() * (canvas.height - 50),
+                    width: 50,
+                    height: 50
+                };
+                bubbles3.push(bubble);
+            }
+        }
+        
+        function drawRoom3Game() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(letreroId512, 60, 460, 150, 150);
+            ctx.drawImage(fishImg3, fish3.x, fish3.y, fish3.width, fish3.height);
+            bubbles3.forEach(bubble => {
+                ctx.drawImage(bubbleImg3, bubble.x, bubble.y, bubble.width, bubble.height);
+            });
+            ctx.font = '24px Arial';
+            ctx.fillStyle = 'white';
+            ctx.fillText(`Puntos: ${score3}`, 100, 100);
+            ctx.fillText(`Tiempo: ${timer3}`, canvas.width - 200, 100);
+        }
+        
+        function moveFish3() {
+            fish3.x += fish3.dx;
+            fish3.y += fish3.dy;
+        
+            if (fish3.x < 0) fish3.x = 0;
+            else if (fish3.x + fish3.width > canvas.width) fish3.x = canvas.width - fish3.width;
+            if (fish3.y < 0) fish3.y = 0;
+            else if (fish3.y + fish3.height > canvas.height) fish3.y = canvas.height - fish3.height;
+        }
+        
+        function checkBubbleCollisions3() {
+            for (let i = 0; i < bubbles3.length; i++) {
+                let bubble = bubbles3[i];
+                if (fish3.x < bubble.x + bubble.width && fish3.x + fish3.width > bubble.x &&
+                    fish3.y < bubble.y + bubble.height && fish3.y + fish3.height > bubble.y) {
+                    bubbles3.splice(i, 1);
+                    score3 += 10;
+                    i--;
+                }
+            }
+        }
+        
+        function updateRoom3Game() {
+            moveFish3();
+            checkBubbleCollisions3();
+        }
+
+        //------------
+                    
+        let fish4, obstacles4, score4, gameRunning4;
+        let fishImg4 = new Image();
+        let obstacleImg4 = new Image();
+        let obstacleSpeed4 = 2;
+        let obstacleCreationInterval4, speedIncreaseInterval4;
+        
+        fishImg4.onload = () => {
+            obstacleImg4.onload = () => {
+                if (roomId === 4) {
+                    initializeRoom4Game();
+                }
+            };
+            obstacleImg4.src = 'obstacle.png';
+        };
+        fishImg4.src = 'fish.png';
+        
+        function initializeRoom4Game() {
+            fish4 = {
+                x: canvas.width / 2 - 50,
+                y: canvas.height / 2 - 50,
+                width: 100,
+                height: 100,
+                dx: 0,
+                dy: 0,
+                hitboxOffset: 20
+            };
+        
+            obstacles4 = [];
+            score4 = 0;
+            gameRunning4 = true;
+        
+            obstacleCreationInterval4 = setInterval(createObstacle4, 1000);
+            speedIncreaseInterval4 = setInterval(() => {
+                if (gameRunning4) {
+                    obstacleSpeed4 += 0.5;
+                }
+            }, 5000);
+        }
+        
+        function createObstacle4() {
+            if (gameRunning4) {
+                let obstacle = {
+                    x: canvas.width,
+                    y: Math.random() * (canvas.height - 50),
+                    width: 50,
+                    height: 50,
+                    dx: -obstacleSpeed4
+                };
+                obstacles4.push(obstacle);
+            }
+        }
+        
+        function updateRoom4Game() {
+            if (!gameRunning4) return;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(letreroId512, 60, 460, 150, 150);
+            moveFish4();
+            updateObstacles4();
+            drawFish4();
+            obstacles4.forEach(drawObstacle4);
+            drawScore4();
+        }
+        
+        function drawFish4() {
+            console.log("Dibuja")
+            ctx.drawImage(fishImg4, fish4.x, fish4.y, fish4.width, fish4.height);
+        }
+        
+        function drawObstacle4(obstacle) {
+            ctx.drawImage(obstacleImg4, obstacle.x, obstacle.y, obstacle.width, obstacle.height);
+        }
+        
+        function drawScore4() {
+            ctx.font = '24px Arial';
+            ctx.fillStyle = 'white';
+            score4++;
+            ctx.fillText(`Puntos: ${score4}`, 105, 100);
+        }
+        
+        function moveFish4() {
+            fish4.x += fish4.dx;
+            fish4.y += fish4.dy;
+            if (fish4.x < 0) fish4.x = 0;
+            else if (fish4.x + fish4.width > canvas.width) fish4.x = canvas.width - fish4.width;
+            if (fish4.y < 0) fish4.y = 0;
+            else if (fish4.y + fish4.height > canvas.height) fish4.y = canvas.height - fish4.height;
+        }
+        
+        function updateObstacles4() {
+            for (let i = 0; i < obstacles4.length; i++) {
+                obstacles4[i].x += obstacles4[i].dx;
+                if (
+                    fish4.x + fish4.hitboxOffset < obstacles4[i].x + obstacles4[i].width &&
+                    fish4.x + fish4.width - fish4.hitboxOffset > obstacles4[i].x &&
+                    fish4.y + fish4.hitboxOffset < obstacles4[i].y + obstacles4[i].height &&
+                    fish4.y + fish4.height - fish4.hitboxOffset > obstacles4[i].y
+                ) {
+                    gameRunning4 = false; 
+                    alert(`¡Has perdido! El juego se reiniciara. Acumulaste: ${score4} puntos`);
+                    
+                    initializeRoom4Game();
+                }
+                if (obstacles4[i] && obstacles4[i].x + obstacles4[i].width < 0) {
+                    obstacles4.splice(i, 1);
+                }
+            }
+        }
+                
+        //------------
+
+        
+        document.addEventListener('keydown', (e) => {
+            if (roomId == 2 && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) {
+                e.preventDefault();
+                basketDx = (e.key === 'ArrowLeft') ? -5 : 5;
+            }
+        });
+        
+        document.addEventListener('keyup', (e) => {
+            if (roomId == 2 && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) {
+                e.preventDefault();
+                basketDx = 0;
+            }  
+        });
+        
+        document.addEventListener('keydown', (e) => {
+            if (roomId === 3) {
+                switch (e.key) {
+                    case 'ArrowUp': fish3.dy = -5; break;
+                    case 'ArrowDown': fish3.dy = 5; break;
+                    case 'ArrowLeft': fish3.dx = -5; break;
+                    case 'ArrowRight': fish3.dx = 5; break;
+                }
+            }
+        });
+        
+        document.addEventListener('keyup', (e) => {
+            if (roomId === 3) {
+                if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+                    fish3.dx = 0;
+                    fish3.dy = 0;
+                }
+            }
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if (roomId === 4) {
+                switch (e.key) {
+                    case 'ArrowUp': fish4.dy = -5; break;
+                    case 'ArrowDown': fish4.dy = 5; break;
+                    case 'ArrowLeft': fish4.dx = -5; break;
+                    case 'ArrowRight': fish4.dx = 5; break;
+                }
+            }
+        });
+        
+        document.addEventListener('keyup', (e) => {
+            if (roomId === 4) {
+                if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+                    fish4.dx = 0;
+                    fish4.dy = 0;
+                }
+            }
+        });
+        
          function gameLoop() {
              const now = Date.now();
              const deltaTime = now - lastFrameTime;
              if (deltaTime >= frameRate) {
-                if (roomId!=1) speedg = 1; //Esto reinicia la velocidad del cuadro cada que sales del minijuego
-                if (roomId==1) { //MINIJUEGO 1, The 10px Game
+                if (backRoomBool) {
+                    roomId = 666;
+                }
+                if (roomId!=1) speedg = 1;
+                if (roomId==1) {
                     ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    nostalgicSong.play();
+                    ctx.fillStyle = 'white';
+                    ctx.fillRect(0, 0, 1200, 690);
+                    ctx.fillStyle = 'black';
                     socket.send(JSON.stringify({ id: id, x: x, y: y, dy:dy, dx:dx, roomId:roomId, name:name, message:message, angleDegreesmv:angleDegreesmv, timeMessage:timeMessage }));
                     canvas.removeEventListener('click', handleMouseClick) ;
                     x=-500;
@@ -505,6 +913,7 @@
                     mouseY = -400;
                     mouseX = -430;
                     xgpx+=speedg;
+                    ctx.drawImage(letreroId512, 60, 460, 150, 150);
                     ctx.fillRect(xgpx,ygpx,10,10)
                     if(xgpx>1200){
                         xgpx=0;
@@ -516,16 +925,46 @@
                         speedg++;
                     }
                 }
-                if (roomId==2) { 
+                if (roomId == 2) {
+                    if (!gameRunning2) {
+                        initializeFishGame();
+                        gameRunning2 = true;
+                    }
+                    minigameSong1.play();
                     ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    ctx.drawImage(letreroId512, 60, 460, 150, 150);
                     socket.send(JSON.stringify({ id: id, x: x, y: y, dy:dy, dx:dx, roomId:roomId, name:name, message:message, angleDegreesmv:angleDegreesmv, timeMessage:timeMessage }));
                     canvas.removeEventListener('click', handleMouseClick) ;
                     x=-500;
                     y=-500;
                     mouseX = -400;
                     mouseY = -430;
+                    ctx.drawImage(basketImg2, basketX, basketY, basketWidth, basketHeight); 
+                    fishes2.forEach((fish, index) => {
+                        fish.y += fish.dy;
+                        ctx.drawImage(fishImg2, fish.x, fish.y, fish.width, fish.height);
+                        if (fish.y < basketY + basketHeight && fish.y + fish.height > basketY &&
+                            fish.x + fish.width > basketX && fish.x < basketX + basketWidth) {
+                            score2 += 10;
+                            fishes2.splice(index, 1); 
+                        }
+                    });
+            
+                    ctx.font = '24px Arial';
+                    ctx.fillStyle = 'white';
+                    ctx.fillText(`Puntos: ${score2}`, 120, 100);
+                    ctx.fillText(`Tiempo: ${timerSeconds}s`, canvas.width - 210, 100); 
+            
+                    basketX += basketDx;
+                    if (basketX < 0) basketX = 0;
+                    else if (basketX + basketWidth > canvas.width) basketX = canvas.width - basketWidth;
+                } else if (gameRunning2) {
+                    cleanupGame();
                 }
+                
+                
                 if (roomId==3) {
+                    minigameSong1.play();
                     ctx.clearRect(0, 0, canvas.width, canvas.height);
                     socket.send(JSON.stringify({ id: id, x: x, y: y, dy:dy, dx:dx, roomId:roomId, name:name, message:message, angleDegreesmv:angleDegreesmv, timeMessage:timeMessage }));
                     canvas.removeEventListener('click', handleMouseClick) ;
@@ -533,8 +972,36 @@
                     y=-500;
                     mouseX = -400;
                     mouseY = -430;
+                    if (!gameRunning3) initializeRoom3Game();
+                    drawRoom3Game();
+                    updateRoom3Game();
+                } else if (gameRunning3) {
+                    gameRunning3 = false;
+                    clearInterval(bubbleInterval3);
+                    clearInterval(timerInterval3);
                 }
-                if (roomId!=1 && roomId !=2 && roomId !=3) { // Las 3 salas representan 3 juegos dentro de Fish que no involucran el uso de los peces y el update es distinto
+
+                if (roomId == 4) {
+                    minigameSong2.play();
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    ctx.fillStyle = 'white';
+                    ctx.fillRect(0, 0, 1200, 690);
+                    ctx.fillStyle = 'black';
+                    socket.send(JSON.stringify({ id: id, x: x, y: y, dy: dy, dx: dx, roomId: roomId, name: name, message: message, angleDegreesmv: angleDegreesmv, timeMessage: timeMessage }));
+                    canvas.removeEventListener('click', handleMouseClick);
+                    x = -500;
+                    y = -500;
+                    mouseX = -400;
+                    mouseY = -430;
+                    if (!gameRunning4) {
+                        initializeRoom4Game();
+                    }
+                    updateRoom4Game();
+                } else {
+                    clearInterval(obstacleCreationInterval4);
+                    clearInterval(speedIncreaseInterval4);
+                }
+                if (roomId!=1 && roomId !=2 && roomId !=3 && roomId !=4) {
                     ctx.clearRect(0, 0, canvas.width, canvas.height);
                     update();
                     drawOtherPlayers();
@@ -555,7 +1022,6 @@
         ctx.fillRect(500, 300, 200, 200);
         setTimeout(function() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-            mainSong.play();
             gameLoop();
         }, 2000); 
     </script>    
