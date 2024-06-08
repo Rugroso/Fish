@@ -21,10 +21,7 @@ const canvas = document.getElementById('gameCanvas');
         let allMouseY = -100;
         let backRoomBool = false;
         let contBackMessage = 0;
-
-
-        
-
+        let audioVerificaction = false;
 
         const backRoom = new Image();
         backRoom.src = 'Backroom.jpg';
@@ -164,7 +161,7 @@ const canvas = document.getElementById('gameCanvas');
             const rect = canvas.getBoundingClientRect();
             const scaleX = canvas.width / rect.width;
             const scaleY = canvas.height / rect.height;
-        
+            audioVerificaction = true;
             allMouseX = (event.clientX - rect.left) * scaleX;
             allMouseY = (event.clientY - rect.top) * scaleY;
         
@@ -228,7 +225,7 @@ const canvas = document.getElementById('gameCanvas');
                 console.log(timeMessage);
                 timeMessage++;
             }
-            if (timeMessage==1) {
+            if (timeMessage==1 && audioVerificaction) {
                 chatSound.play();
             }
             if (timeMessage>180) {
@@ -294,7 +291,7 @@ const canvas = document.getElementById('gameCanvas');
                         ctx.fillText(player.message,player.x+151,player.y-20);
                         ctx.closePath();
                     }
-                    if (player.timeMessage == 1) {
+                    if (player.timeMessage == 1 && audioVerificaction) {
                         chatSound.play().catch(e => console.error('Error playing the audio:', e));;
                     }
                     anglePlayer = Math.atan2(player.dy, player.dx);
