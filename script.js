@@ -2,8 +2,8 @@ const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
         //IMPORTANTE:
         // Para correr Fish es esencial escribir "node server.js" en la terminal, de esta forma el servidor comienza a funcionar.
-        let socket = new WebSocket('wss://node-simple-server.glitch.me/'); //Cambien esto por su direccion ip, les sale al abrir live server (extensión de VS Code) configurandolo para que abra un servidor en el LAN (area local), no cambien nada mas que solo la direccion el puerto (:3000 se queda igual)
-        
+        let socket = new WebSocket('ws://192.168.0.187:3000'); //Cambien esto por su direccion ip, les sale al abrir live server (extensión de VS Code) configurandolo para que abra un servidor en el LAN (area local), no cambien nada mas que solo la direccion el puerto (:3000 se queda igual)
+        //let socket = new WebSocket('wss://node-simple-server.glitch.me/'); 
         let otherPlayers = {};
         let id = Math.floor(Math.random()*10000);
         let dx;
@@ -22,6 +22,7 @@ const canvas = document.getElementById('gameCanvas');
         let backRoomBool = false;
         let contBackMessage = 0;
         let audioVerificaction = false;
+        let messageAudio = false;
 
         const backRoom = new Image();
         backRoom.src = 'Backroom.jpg';
@@ -90,22 +91,21 @@ const canvas = document.getElementById('gameCanvas');
     
         socket.onopen = function() {
             console.log('Connected to the server');
-            socket.send(JSON.stringify({ id: id, x: x, y: y, dy:dy, dx:dx, roomId:roomId, name:name, message:message, angleDegreesmv:angleDegreesmv, timeMessage:timeMessage}));
+            socket.send(JSON.stringify({ id: id, x: x, y: y, dy:dy, dx:dx, roomId:roomId, name:name, message:message, angleDegreesmv:angleDegreesmv, timeMessage:timeMessage, messageAudio:messageAudio}));
         };
         
         socket.onclose = function() {
             console.log("WebSocket connection closed unexpectedly.");
             setTimeout(function() {
-                socket = new WebSocket('ws://192.168.0.181:3000'); //Cambien esto por su direccion ip, les sale al abrir live server configurandolo para que abra un servidor en el LAN (area local), no cambien nada mas que solo la direccion el puerto (:3000 se queda igual)
+                socket = new WebSocket('ws://192.168.0.187:3000'); //Cambien esto por su direccion ip, les sale al abrir live server configurandolo para que abra un servidor en el LAN (area local), no cambien nada mas que solo la direccion el puerto (:3000 se queda igual)
                 attachSocketHandlers();
             }, 1000); 
         };
 
         socket.onmessage = function(event) {
             const data = JSON.parse(event.data);
-            if (data.id && data.id !== id) { 
-                otherPlayers[data.id] = {id:data.id, x: data.x, y: data.y, dy:data.dy, dx:data.dx, roomId:data.roomId, name:data.name, message:data.message, angleDegreesmv:data.angleDegreesmv, timeMessage:data.timeMessage };
-            }
+                otherPlayers[data.id] = {id:data.id, x: data.x, y: data.y, dy:data.dy, dx:data.dx, roomId:data.roomId, name:data.name, message:data.message, angleDegreesmv:data.angleDegreesmv, timeMessage:data.timeMessage, messageAudio:data.messageAudio };
+            
         };
         
     
@@ -225,7 +225,7 @@ const canvas = document.getElementById('gameCanvas');
                 console.log(timeMessage);
                 timeMessage++;
             }
-            if (timeMessage==1 && audioVerificaction) {
+            if (timeMessage>0 && timeMessage <6) {
                 chatSound.play();
             }
             if (timeMessage>180) {
@@ -268,10 +268,6 @@ const canvas = document.getElementById('gameCanvas');
             if (!selection) {
                 canvas.addEventListener('click', handleMouseClick);
             }
-
-            if (allMouseX > x && allMouseX < x + 200 && allMouseY > y+35 && allMouseY < y + 160) {
-                alert (`Te has autoclickeado!!`);
-            }
         }
 
         let drawPosition=false;
@@ -291,8 +287,8 @@ const canvas = document.getElementById('gameCanvas');
                         ctx.fillText(player.message,player.x+151,player.y-20);
                         ctx.closePath();
                     }
-                    if (player.timeMessage == 1 && audioVerificaction) {
-                        chatSound.play().catch(e => console.error('Error playing the audio:', e));;
+                    if (player.timeMessage>0 && player.timeMessage <6) {
+                        chatSound.play();
                     }
                     anglePlayer = Math.atan2(player.dy, player.dx);
                     angleDegreesPlayer = anglePlayer * (180 / Math.PI);
@@ -332,7 +328,7 @@ const canvas = document.getElementById('gameCanvas');
                         canvas.addEventListener('click', handleMouseClick);
                     }
         
-                    if (allMouseX > player.x && allMouseX < player.x + 200 && allMouseY > player.y+35 && allMouseY < player.y + 160) {
+                    if (allMouseX > player.x && allMouseX < player.x + 200 && allMouseY > player.y+35 && allMouseY < player.y + 160 && player.id != id) {
                         alert (`has dado clic sobre el jugador con id ${player.id}`);
                     }
             }
@@ -381,6 +377,10 @@ const canvas = document.getElementById('gameCanvas');
                 mouseY=600;
                 roomId=512;
             }
+
+            if (allMouseX > x && allMouseX < x + 200 && allMouseY > y+35 && allMouseY < y + 160) {
+                alert (`Te has autoclickeado!!`);
+            }
             //Dibujo de sala actual
             if (roomId===666) drawRoom666();
             if (!backRoomBool) {
@@ -389,7 +389,7 @@ const canvas = document.getElementById('gameCanvas');
                 if (roomId===0) drawRoom0();
             }
             if (socket.readyState === WebSocket.OPEN) {
-                socket.send(JSON.stringify({ id: id, x: x, y: y, dy: dy, dx: dx, roomId: roomId, name: name, message: message, angleDegreesmv: angleDegreesmv, timeMessage: timeMessage }));
+                socket.send(JSON.stringify({ id: id, x: x, y: y, dy: dy, dx: dx, roomId: roomId, name: name, message: message, angleDegreesmv: angleDegreesmv, timeMessage: timeMessage, messageAudio: messageAudio }));
             }
         }
         
@@ -761,7 +761,7 @@ const canvas = document.getElementById('gameCanvas');
                     ctx.fillStyle = 'white';
                     ctx.fillRect(0, 0, 1200, 690);
                     ctx.fillStyle = 'black';
-                    socket.send(JSON.stringify({ id: id, x: x, y: y, dy:dy, dx:dx, roomId:roomId, name:name, message:message, angleDegreesmv:angleDegreesmv, timeMessage:timeMessage }));
+                    socket.send(JSON.stringify({roomId:roomId}));
                     canvas.removeEventListener('click', handleMouseClick) ;
                     x=-500;
                     y=-500;
@@ -788,7 +788,7 @@ const canvas = document.getElementById('gameCanvas');
                     minigameSong1.play();
                     ctx.clearRect(0, 0, canvas.width, canvas.height);
                     ctx.drawImage(letreroId512, 60, 460, 150, 150);
-                    socket.send(JSON.stringify({ id: id, x: x, y: y, dy:dy, dx:dx, roomId:roomId, name:name, message:message, angleDegreesmv:angleDegreesmv, timeMessage:timeMessage }));
+                    socket.send(JSON.stringify({roomId:roomId}));
                     canvas.removeEventListener('click', handleMouseClick) ;
                     x=-500;
                     y=-500;
@@ -821,7 +821,7 @@ const canvas = document.getElementById('gameCanvas');
                 if (roomId==3) {
                     minigameSong1.play();
                     ctx.clearRect(0, 0, canvas.width, canvas.height);
-                    socket.send(JSON.stringify({ id: id, x: x, y: y, dy:dy, dx:dx, roomId:roomId, name:name, message:message, angleDegreesmv:angleDegreesmv, timeMessage:timeMessage }));
+                    socket.send(JSON.stringify({roomId:roomId}));
                     canvas.removeEventListener('click', handleMouseClick) ;
                     x=-500;
                     y=-500;
@@ -842,7 +842,7 @@ const canvas = document.getElementById('gameCanvas');
                     ctx.fillStyle = 'white';
                     ctx.fillRect(0, 0, 1200, 690);
                     ctx.fillStyle = 'black';
-                    socket.send(JSON.stringify({ id: id, x: x, y: y, dy: dy, dx: dx, roomId: roomId, name: name, message: message, angleDegreesmv: angleDegreesmv, timeMessage: timeMessage }));
+                    socket.send(JSON.stringify({roomId:roomId}));
                     canvas.removeEventListener('click', handleMouseClick);
                     x = -500;
                     y = -500;
@@ -860,7 +860,7 @@ const canvas = document.getElementById('gameCanvas');
                     ctx.clearRect(0, 0, canvas.width, canvas.height);
                     update();
                     drawOtherPlayers();
-                    drawFish(x, y);
+                    //drawFish(x, y);
                     allMouseX = -1000;
                     allMouseY = -1000;
                     if (x<-300 || x<-300) {
