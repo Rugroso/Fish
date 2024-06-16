@@ -9,7 +9,7 @@ server.on('connection', function(ws) {
             const data = JSON.parse(message);
             const toSend = JSON.stringify({ id: data.id, x: data.x, y: data.y, dx:data.dx, dy:data.dy, roomId:data.roomId, name:data.name, message:data.message, angleDegreesmv:data.angleDegreesmv, timeMessage:data.timeMessage });
             players.forEach(client => {
-                if (client !== ws && client.readyState === WebSocket.OPEN) {
+                if (client.readyState === WebSocket.OPEN) {
                     client.send(toSend);
                 }
             });
