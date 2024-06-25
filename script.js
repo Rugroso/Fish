@@ -2,27 +2,24 @@ const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
         //IMPORTANTE:
         // Para correr Fish es esencial escribir "node server.js" en la terminal, de esta forma el servidor comienza a funcionar.
-        let socket = new WebSocket('wss://node-simple-server.glitch.me/'); //Cambien esto por su direccion ip, les sale al abrir live server (extensión de VS Code) configurandolo para que abra un servidor en el LAN (area local), no cambien nada mas que solo la direccion el puerto (:3000 se queda igual)
-        //let socket = new WebSocket('wss://node-simple-server.glitch.me/'); 
+        let socket = new io('wss://node-simple-server.glitch.me/'); //Cambien esto por su direccion ip, les sale al abrir live server (extensión de VS Code) configurandolo para que abra un servidor en el LAN (area local), no cambien nada mas que solo la direccion el puerto (:3000 se queda igual)
+        //let socket = new io('wss://node-simple-server.glitch.me/'); 
         let otherPlayers = {};
         let id = Math.floor(Math.random()*10000);
         let dx;
         let dy;
         let angle;
-        let angleDegrees;
         let anglemv;
         let angleDegreesmv;
         let roomId = 512;
         let name= id.toString();
         let message = "";
         let timeMessage = 0;
-        let movement=false;
         let allMouseX = -100;
         let allMouseY = -100;
         let backRoomBool = false;
-        let contBackMessage = 0;
-        let audioVerificaction = false;
         let messageAudio = false;
+        let socketId;
 
         const backRoom = new Image();
         backRoom.src = 'Backroom.jpg';
@@ -88,40 +85,68 @@ const canvas = document.getElementById('gameCanvas');
         CETYS.volume = 0.1;
         const chatSound = new Audio('chatSoundEffect.mp3');
         chatSound.volume = 1.0;
-    
-        socket.onopen = function() {
+
+        socket.on('connect', function() {
             console.log('Connected to the server');
-            socket.send(JSON.stringify({ id: id, x: x, y: y, dy:dy, dx:dx, roomId:roomId, name:name, message:message, angleDegreesmv:angleDegreesmv, timeMessage:timeMessage, messageAudio:messageAudio}));
-        };
-        
-        socket.onclose = function() {
-            console.log("WebSocket connection closed unexpectedly.");
-            setTimeout(function() {
-                socket = new WebSocket('ws://192.168.0.187:3000'); //Cambien esto por su direccion ip, les sale al abrir live server configurandolo para que abra un servidor en el LAN (area local), no cambien nada mas que solo la direccion el puerto (:3000 se queda igual)
-                attachSocketHandlers();
-            }, 1000); 
-        };
+            socket.emit('update', {
+                id: id,
+                x: x,
+                y: y,
+                dx: dx,
+                dy: dy,
+                roomId: roomId,
+                name: name,
+                message: message,
+                angleDegreesmv: angleDegreesmv,
+                timeMessage: timeMessage,
+                messageAudio: messageAudio,
+                socketId: socketId
+            });
+        });
 
-        socket.onmessage = function(event) {
-            const data = JSON.parse(event.data);
-                otherPlayers[data.id] = {id:data.id, x: data.x, y: data.y, dy:data.dy, dx:data.dx, roomId:data.roomId, name:data.name, message:data.message, angleDegreesmv:data.angleDegreesmv, timeMessage:data.timeMessage, messageAudio:data.messageAudio };
-        };
+        socket.on('update', function(data) {
+            otherPlayers[data.id] = {
+                id: data.id,
+                x: data.x,
+                y: data.y,
+                dx: data.dx,
+                dy: data.dy,
+                roomId: data.roomId,
+                name: data.name,
+                message: data.message,
+                angleDegreesmv: data.angleDegreesmv,
+                timeMessage: data.timeMessage,
+                messageAudio: data.messageAudio,
+                socketId: data.socketId
+            };
+        });
+
+        socket.on('socketDisconnected', function (socketId) {
+            Object.values(otherPlayers).forEach(player => {
+                if (socketId===player.socketId) {
+                    player.x = -300;
+                    player.y = -300;
+                    jugadorDesconectado=player.id;
+                }
+            });
+        });
+
+        socket.on('disconnect', function() {
+            alert("Has sido desconectado del servidor");
+            socket.emit("joinRoom", roomId, oldRoomId, id)  
+         });
+
+
+        socket.on('newPosition', function(data) {
+            otherPlayers[data.id].x = data.x;
+            otherPlayers[data.id].y = data.y;
+        });
         
+        
+        socket.on('error', function(event) {
+            console.error('Socket.IO error:', event);
+        });
     
-        socket.onerror = function(event) {
-            console.error('WebSocket error:', event);
-        };
-        
-        function sendMessage() {
-            if (socket.readyState === WebSocket.OPEN) {
-                socket.send(JSON.stringify({ id: id, x: x, y: y }));
-            } else if (socket.readyState === WebSocket.CONNECTING) {
-                setTimeout(sendMessage, 100);
-            } else {
-                console.log("WebSocket is not open and cannot send messages:", socket.readyState);
-            }
-        }
-
         let x = 50;
         let y = 300;
         let xmv= 0;
@@ -239,6 +264,20 @@ const canvas = document.getElementById('gameCanvas');
                 selection=true;
                 //console.log(angleDegreesmv);
             }
+
+            ctx.font = "bold 20px serif";
+            ctx.fillText(name,x+64,y+180);
+            if (message!="") {
+                ctx.beginPath();
+                ctx.fillStyle = 'rgba(256, 256, 256, 0.8)';
+                ctx.fillRect(x+145, y-50, ctx.measureText(message).width+10, 50)
+                ctx.fillStyle = 'black'
+                ctx.fillText(message,x+151,y-20);
+                ctx.closePath();
+            }
+            if (timeMessage>0 && timeMessage <6) {
+                chatSound.play();
+            }
             if (selection) {
                 canvas.removeEventListener('click', handleMouseClick) ;
             }
@@ -251,121 +290,75 @@ const canvas = document.getElementById('gameCanvas');
         let delay = 0;
         function drawOtherPlayers() {
             Object.values(otherPlayers).forEach(player => {
-                //console.log(roomId)
+                if (id!=player.id) {
+                    //console.log(roomId)
                 //console.log(player.roomId)
-                if (player.id == id) {
-                    if(delay===30) {
-                        if (Math.abs(player.x-x) > 20 && Math.abs (player.y-y) > 20 )  {
-                            x = player.x;
-                            y = player.y;
-                        }
-
-                        delay = 0;
-                    }
-                    delay++;
-                    if(angleDegreesmv>-100 && angleDegreesmv<-80) { //arriba
-                        ctx.drawImage(fishImage3dUp, x, y);
-                    }
-                    if(angleDegreesmv<100 && angleDegreesmv>80) { //abajo
-                    ctx.drawImage(fishImage3dFront, x, y);
-                    }
-                    if(angleDegreesmv>-10 && angleDegreesmv<10) { //derecha
-                         ctx.drawImage(fishImage3dRight, x, y);
-                    }
-                    if(angleDegreesmv>-80 && angleDegreesmv<-10) { //arriba derecha
-                        ctx.drawImage(fishImage3dRightSideUp, x, y);
-                    }
-                    if(angleDegreesmv<80 && angleDegreesmv>10) { //abajo derecha
-                        ctx.drawImage(fishImage3dRightSideDown, x, y);
-                    }
-                    if(angleDegreesmv<-170 || angleDegreesmv>170) { //izquierda
-                        ctx.drawImage(fishImage3dLeft, x, y);
-                    }
-                    if(angleDegreesmv>-170 && angleDegreesmv<-100) { //arriba izquierda
-                        ctx.drawImage(fishImage3dLeftUp, x, y);
-                    }
-                    if(angleDegreesmv<170 && angleDegreesmv>100) { //abajo izquierda
-                        ctx.drawImage(fishImage3dLeftDown, x, y);
-                    }
-                    ctx.font = "bold 20px serif";
-                    ctx.fillText(player.name,x+64,y+180)
-                    if (xmv > x && xmv < x + 200 && ymv > y+35 && ymv < y + 160) {
-                        document.getElementById('gameCanvas').style.cursor = 'pointer';
-                        selection=true;
-                    }
-                    if (selection) {
-                        canvas.removeEventListener('click', handleMouseClick) ;
-                    }
-                    if (!selection) {
-                        canvas.addEventListener('click', handleMouseClick);
-                    }
-
-                } else {
-                    if (roomId===player.roomId) {
-                        ctx.font = "bold 20px serif";
-                        ctx.fillText(player.name,player.x+64,player.y+180);
-                        if (player.message!="") {
-                            ctx.beginPath();
-                            ctx.fillStyle = 'rgba(256, 256, 256, 0.8)';
-                            ctx.fillRect(player.x+145, player.y-50, ctx.measureText(player.message).width+10, 50)
-                            ctx.fillStyle = 'black'
-                            ctx.fillText(player.message,player.x+151,player.y-20);
-                            ctx.closePath();
-                        }
-                        if (player.timeMessage>0 && player.timeMessage <6) {
-                            chatSound.play();
-                        }
-                        anglePlayer = Math.atan2(player.dy, player.dx);
-                        angleDegreesPlayer = anglePlayer * (180 / Math.PI);
-                        //console.log(`player: ${player.dy}`)
-                        if(player.angleDegreesmv>-100 && player.angleDegreesmv<-80) { //arriba
-                            ctx.drawImage(fishImage3dUp, player.x, player.y);
-                        }
-                        if(player.angleDegreesmv<100 && player.angleDegreesmv>80) { //abajo
-                        ctx.drawImage(fishImage3dFront, player.x, player.y);
-                        }
-                        if(player.angleDegreesmv>-10 && player.angleDegreesmv<10) { //derecha
-                            ctx.drawImage(fishImage3dRight, player.x, player.y);
-                        }
-                        if(player.angleDegreesmv>-80 && player.angleDegreesmv<-10) { //arriba derecha
-                            ctx.drawImage(fishImage3dRightSideUp, player.x, player.y);
-                        }
-                        if(player.angleDegreesmv<80 && player.angleDegreesmv>10) { //abajo derecha
-                            ctx.drawImage(fishImage3dRightSideDown, player.x, player.y);
-                        }
-                        if(player.angleDegreesmv<-170 || player.angleDegreesmv>170) { //izquierda
-                            ctx.drawImage(fishImage3dLeft, player.x, player.y);
-                        }
-                        if(player.angleDegreesmv>-170 && player.angleDegreesmv<-100) { //arriba izquierda
-                            ctx.drawImage(fishImage3dLeftUp, player.x, player.y);
-                        }
-                        if(player.angleDegreesmv<170 && player.angleDegreesmv>100) { //abajo izquierda
-                            ctx.drawImage(fishImage3dLeftDown, player.x, player.y);
-                        }
-                        if (xmv > player.x && xmv < player.x + 200 && ymv > player.y+35 && ymv < player.y + 160) {
-                            document.getElementById('gameCanvas').style.cursor = 'pointer';
-                            selection=true;
-                        }
-                        if (selection) {
-                            canvas.removeEventListener('click', handleMouseClick) ;
-                        }
-                        if (!selection) {
-                            canvas.addEventListener('click', handleMouseClick);
-                        }
-            
-                        if (allMouseX > player.x && allMouseX < player.x + 200 && allMouseY > player.y+35 && allMouseY < player.y + 160) {
-                            alert (`has dado clic sobre el jugador con id ${player.id}`);
-                        }
+                ctx.font = "bold 20px serif";
+                ctx.fillText(player.name,player.x+64,player.y+180);
+                if (player.message!="") {
+                    ctx.beginPath();
+                    ctx.fillStyle = 'rgba(256, 256, 256, 0.8)';
+                    ctx.fillRect(player.x+145, player.y-50, ctx.measureText(player.message).width+10, 50)
+                    ctx.fillStyle = 'black'
+                    ctx.fillText(player.message,player.x+151,player.y-20);
+                    ctx.closePath();
+                }
+                if (player.timeMessage>0 && player.timeMessage <6) {
+                    chatSound.play();
+                }
+                anglePlayer = Math.atan2(player.dy, player.dx);
+                angleDegreesPlayer = anglePlayer * (180 / Math.PI);
+                //console.log(`player: ${player.dy}`)
+                if(player.angleDegreesmv>-100 && player.angleDegreesmv<-80) { //arriba
+                    ctx.drawImage(fishImage3dUp, player.x, player.y);
+                }
+                if(player.angleDegreesmv<100 && player.angleDegreesmv>80) { //abajo
+                ctx.drawImage(fishImage3dFront, player.x, player.y);
+                }
+                if(player.angleDegreesmv>-10 && player.angleDegreesmv<10) { //derecha
+                    ctx.drawImage(fishImage3dRight, player.x, player.y);
+                }
+                if(player.angleDegreesmv>-80 && player.angleDegreesmv<-10) { //arriba derecha
+                    ctx.drawImage(fishImage3dRightSideUp, player.x, player.y);
+                }
+                if(player.angleDegreesmv<80 && player.angleDegreesmv>10) { //abajo derecha
+                    ctx.drawImage(fishImage3dRightSideDown, player.x, player.y);
+                }
+                if(player.angleDegreesmv<-170 || player.angleDegreesmv>170) { //izquierda
+                    ctx.drawImage(fishImage3dLeft, player.x, player.y);
+                }
+                if(player.angleDegreesmv>-170 && player.angleDegreesmv<-100) { //arriba izquierda
+                    ctx.drawImage(fishImage3dLeftUp, player.x, player.y);
+                }
+                if(player.angleDegreesmv<170 && player.angleDegreesmv>100) { //abajo izquierda
+                    ctx.drawImage(fishImage3dLeftDown, player.x, player.y);
+                }
+                if (xmv > player.x && xmv < player.x + 200 && ymv > player.y+35 && ymv < player.y + 160) {
+                    document.getElementById('gameCanvas').style.cursor = 'pointer';
+                    selection=true;
+                }
+                if (selection) {
+                    canvas.removeEventListener('click', handleMouseClick) ;
+                }
+                if (!selection) {
+                    canvas.addEventListener('click', handleMouseClick);
+                }
+                if (allMouseX > player.x && allMouseX < player.x + 200 && allMouseY > player.y+35 && allMouseY < player.y + 160) {
+                    alert (`has dado clic sobre el jugador con id ${player.id}`);
                 }
                 }
+
                 
-                
-            });
+                });
         }
 
         let selection = false;
 
         function update() {
+            socket.on('update', (data) => {
+                console.log('Update received:', data);
+                // Aquí puedes manejar los datos recibidos
+            });
             dx = (mouseX-70) - x;
             dy = (mouseY-100) - y;
             angle = Math.atan2(dy, dx);
@@ -426,9 +419,19 @@ const canvas = document.getElementById('gameCanvas');
                 if (roomId===206) drawRoom206();
                 if (roomId===0) drawRoom0();
             }
-            if (socket.readyState === WebSocket.OPEN) {
-                socket.send(JSON.stringify({ id: id, x: x, y: y, dy: dy, dx: dx, roomId: roomId, name: name, message: message, angleDegreesmv: angleDegreesmv, timeMessage: timeMessage, messageAudio: messageAudio }));
-            }
+            socket.emit('update', {
+                id: id,
+                x: x,
+                y: y,
+                dx: dx,
+                dy: dy,
+                roomId: roomId,
+                name: name,
+                message: message,
+                angleDegreesmv: angleDegreesmv,
+                timeMessage: timeMessage,
+                socketId: socketId
+            });
         }
         
         function selectRoom() {
@@ -450,7 +453,13 @@ const canvas = document.getElementById('gameCanvas');
                 minigameSong2.currentTime = 0;
                 nostalgicSong.currentTime = 0;
            }
+           oldRoomId=roomId;
            roomId = parseInt(idRoom, 10);
+           socket.emit("joinRoom", roomId, oldRoomId, id);
+           Object.values(otherPlayers).forEach(player => {
+                player.x = -300;
+                player.y = -300;
+            });
         }
 
         function changeName() {
@@ -799,7 +808,7 @@ const canvas = document.getElementById('gameCanvas');
                     ctx.fillStyle = 'white';
                     ctx.fillRect(0, 0, 1200, 690);
                     ctx.fillStyle = 'black';
-                    socket.send(JSON.stringify({roomId:roomId}));
+                    socket.emit(JSON.stringify({roomId:roomId}));
                     canvas.removeEventListener('click', handleMouseClick) ;
                     x=-500;
                     y=-500;
@@ -826,7 +835,7 @@ const canvas = document.getElementById('gameCanvas');
                     minigameSong1.play();
                     ctx.clearRect(0, 0, canvas.width, canvas.height);
                     ctx.drawImage(letreroId512, 60, 460, 150, 150);
-                    socket.send(JSON.stringify({roomId:roomId}));
+                    socket.emit(JSON.stringify({roomId:roomId}));
                     canvas.removeEventListener('click', handleMouseClick) ;
                     x=-500;
                     y=-500;
@@ -859,7 +868,7 @@ const canvas = document.getElementById('gameCanvas');
                 if (roomId==3) {
                     minigameSong1.play();
                     ctx.clearRect(0, 0, canvas.width, canvas.height);
-                    socket.send(JSON.stringify({roomId:roomId}));
+                    socket.emit(JSON.stringify({roomId:roomId}));
                     canvas.removeEventListener('click', handleMouseClick) ;
                     x=-500;
                     y=-500;
@@ -880,7 +889,7 @@ const canvas = document.getElementById('gameCanvas');
                     ctx.fillStyle = 'white';
                     ctx.fillRect(0, 0, 1200, 690);
                     ctx.fillStyle = 'black';
-                    socket.send(JSON.stringify({roomId:roomId}));
+                    socket.emit(JSON.stringify({roomId:roomId}));
                     canvas.removeEventListener('click', handleMouseClick);
                     x = -500;
                     y = -500;
@@ -898,7 +907,7 @@ const canvas = document.getElementById('gameCanvas');
                     ctx.clearRect(0, 0, canvas.width, canvas.height);
                     update();
                     drawOtherPlayers();
-                    //drawFish(x,y);
+                    drawFish(x,y);
                     allMouseX = -1000;
                     allMouseY = -1000;
                     if (x<-300 || x<-300) {

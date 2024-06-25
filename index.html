@@ -115,6 +115,30 @@
         }
     </style>
 </head>
+<script type="module">
+    // Import the functions you need from the SDKs you need
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-analytics.js";
+    // TODO: Add SDKs for Firebase products that you want to use
+    // https://firebase.google.com/docs/web/setup#available-libraries
+  
+    // Your web app's Firebase configuration
+    // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+    const firebaseConfig = {
+      apiKey: "AIzaSyDs9p_WKaJRuIBLLdbN87JBbdM6gzh7zss",
+      authDomain: "fish-8309e.firebaseapp.com",
+      databaseURL: "https://fish-8309e-default-rtdb.firebaseio.com",
+      projectId: "fish-8309e",
+      storageBucket: "fish-8309e.appspot.com",
+      messagingSenderId: "451563172625",
+      appId: "1:451563172625:web:e5e3a40f84e3360925d2b0",
+      measurementId: "G-LDQ3ZZ4V84"
+    };
+  
+    // Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+    const analytics = getAnalytics(app);
+  </script>
 <body>
     <img src="fish logo.png" alt="Logo del Juego" style="display: block; margin: 0 auto; width: 140px;"> 
     <div id="juego">
@@ -146,7 +170,8 @@
             ENVIAR MENSAJE
         </button>
     </div>
-        <script src="script.js">
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+    <script src="script.js">
         
     </script>    
 </body>
