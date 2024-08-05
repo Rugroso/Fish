@@ -4,14 +4,13 @@ const canvas = document.getElementById('gameCanvas');
         // Para correr Fish es esencial escribir "node server.js" en la terminal, de esta forma el servidor comienza a funcionar.
         let socket = new io('wss://node-simple-server.glitch.me/'); //Cambien esto por su direccion ip, les sale al abrir live server (extensión de VS Code) configurandolo para que abra un servidor en el LAN (area local), no cambien nada mas que solo la direccion el puerto (:3000 se queda igual)
         //let socket = new io('wss://node-simple-server.glitch.me/'); 
-        let otherPlayers = {};
+        let otherPlayers = [];
         let id = Math.floor(Math.random()*10000);
         let dx;
         let dy;
         let angle;
         let anglemv;
-        let angleDegreesmv;
-        let roomId = 512;
+        let angleDegrees
         let name= id.toString();
         let message = "";
         let timeMessage = 0;
@@ -20,6 +19,8 @@ const canvas = document.getElementById('gameCanvas');
         let backRoomBool = false;
         let messageAudio = false;
         let socketId;
+        let roomId = 512;
+        let roomIdAux = 0;
 
         const backRoom = new Image();
         backRoom.src = 'Backroom.jpg';
@@ -189,7 +190,7 @@ const canvas = document.getElementById('gameCanvas');
             allMouseX = (event.clientX - rect.left) * scaleX;
             allMouseY = (event.clientY - rect.top) * scaleY;
         
-            console.log (`clic en x: ${allMouseX} clic en y: ${allMouseY}`);
+            //console.log (`clic en x: ${allMouseX} clic en y: ${allMouseY}`);
         }
         canvas.addEventListener('click', allTimeClick)
 
@@ -288,10 +289,14 @@ const canvas = document.getElementById('gameCanvas');
 
         let drawPosition=false;
         let delay = 0;
+        let hola = 0;
         function drawOtherPlayers() {
+            otherPlayers.sort((a, b) => {
+                return a.y - b.y;
+            });
             Object.values(otherPlayers).forEach(player => {
                 if (id!=player.id) {
-                    //console.log(roomId)
+                //console.log(roomId)
                 //console.log(player.roomId)
                 ctx.font = "bold 20px serif";
                 ctx.fillText(player.name,player.x+64,player.y+180);
@@ -347,18 +352,18 @@ const canvas = document.getElementById('gameCanvas');
                     alert (`has dado clic sobre el jugador con id ${player.id}`);
                 }
                 }
-
-                
-                });
+            });
         }
 
         let selection = false;
-
+        let deltaTimeMessageStart = 0;
+        let deltaTimeMessage = 0;
         function update() {
-            socket.on('update', (data) => {
-                console.log('Update received:', data);
-                // Aquí puedes manejar los datos recibidos
-            });
+            ctx.beginPath()
+            ctx.fillStyle = 'black';
+            //ctx.fillText(`Monedas: ${4}`, 1035, 90);
+            ctx.closePath()
+
             dx = (mouseX-70) - x;
             dy = (mouseY-100) - y;
             angle = Math.atan2(dy, dx);
@@ -398,13 +403,20 @@ const canvas = document.getElementById('gameCanvas');
                 mouseY=600;
                 roomId=512;
             }
-            if (message!="" && timeMessage<=180) {
+            if (timeMessage==0 && message !="") {
+                deltaTimeMessageStart = Date.now();
                 timeMessage++;
             }
-            if (timeMessage>0 && timeMessage <6) {
+            if (message!="" && timeMessage<=3000) {
+                deltaTimeMessage = Date.now() - deltaTimeMessageStart;
+                if (deltaTimeMessage==0) deltaTimeMessage++;
+                //console.log(deltaTimeMessage)
+                timeMessage = deltaTimeMessage;
+            }
+            if (timeMessage>0 && timeMessage <30) {
                 chatSound.play();
             }
-            if (timeMessage>180) {
+            if (timeMessage>3000) {
                 timeMessage = 0;
                 message = "";
             }
@@ -470,9 +482,7 @@ const canvas = document.getElementById('gameCanvas');
             message = document.getElementById('sendMessage').value;
             timeMessage=0;
          }
-         let lastFrameTime
-        lastFrameTime = Date.now();
-        const frameRate = 1000 / 60;
+
         //---------
         let xgpx = 0; 
         let ygpx = 400;
@@ -693,7 +703,7 @@ const canvas = document.getElementById('gameCanvas');
         }
         
         function drawFish4() {
-            console.log("Dibuja")
+            //console.log("Dibuja")
             ctx.drawImage(fishImg4, fish4.x, fish4.y, fish4.width, fish4.height);
         }
         
@@ -793,10 +803,12 @@ const canvas = document.getElementById('gameCanvas');
                 }
             }
         });
-        
+        let lastFrameTime = Date.now();
+        const frameRate = 1000 / 60;
          function gameLoop() {
              const now = Date.now();
              const deltaTime = now - lastFrameTime;
+             //console.log(deltaTime);
              if (deltaTime >= frameRate) {
                 if (backRoomBool) {
                     roomId = 666;

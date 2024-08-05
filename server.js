@@ -3,7 +3,7 @@ const { Socket } = require("socket.io");
 
 const io = require ("socket.io" ) (3000, {
   cors: {
-  origin: ["http://localhost:5502","http://10.37.129.2:5502","https://admin.socket.io"],
+  origin: ["http://localhost:5502","http://10.37.129.2:5502"," https://node-simple-server.glitch.me","https://admin.socket.io"],
   credentials: true
   }, })
   instrument(io, {
@@ -32,16 +32,6 @@ io.on('connection', (socket) => {
             y: -300
         };
         io.to(oldRoom).emit('newPosition', toSend)
-    });
-
-    socket.on('playerDisconnected', (id, room) => {
-        const toSend = {
-            id:id,
-            x:-300,
-            y:300,
-        };
-        console.log("Si entro aqui")
-        io.to(room).emit('newPosition', toSend)
     });
 
     socket.on('update', (data) => {
