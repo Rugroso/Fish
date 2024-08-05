@@ -291,9 +291,7 @@ const canvas = document.getElementById('gameCanvas');
         let delay = 0;
         let hola = 0;
         function drawOtherPlayers() {
-            otherPlayers.sort((a, b) => {
-                return a.y - b.y;
-            });
+
             Object.values(otherPlayers).forEach(player => {
                 if (id!=player.id) {
                 //console.log(roomId)
@@ -359,10 +357,10 @@ const canvas = document.getElementById('gameCanvas');
         let deltaTimeMessageStart = 0;
         let deltaTimeMessage = 0;
         function update() {
-            ctx.beginPath()
-            ctx.fillStyle = 'black';
+            //ctx.beginPath()
+            //ctx.fillStyle = 'black';
             //ctx.fillText(`Monedas: ${4}`, 1035, 90);
-            ctx.closePath()
+            //ctx.closePath()
 
             dx = (mouseX-70) - x;
             dy = (mouseY-100) - y;
