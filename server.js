@@ -3,7 +3,7 @@ const { Socket } = require("socket.io");
 
 const io = require ("socket.io" ) (3000, {
   cors: {
-  origin: ["http://localhost:5502","http://10.37.129.2:5502"," https://node-simple-server.glitch.me","https://admin.socket.io"],
+  origin: ["http://localhost:5502","http://10.4.47.42:5502","http://10.37.129.2:5502"," https://node-simple-server.glitch.me","https://admin.socket.io"],
   credentials: true
   }, })
   instrument(io, {

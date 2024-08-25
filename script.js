@@ -293,7 +293,7 @@ const canvas = document.getElementById('gameCanvas');
         function drawOtherPlayers() {
 
             Object.values(otherPlayers).forEach(player => {
-                if (id!=player.id) {
+                if (id!=player.id && roomId===player.roomId) {
                 //console.log(roomId)
                 //console.log(player.roomId)
                 ctx.font = "bold 20px serif";
